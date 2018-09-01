@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ComCtrls, ExtCtrls, Buttons, Menus;
+  StdCtrls, ComCtrls, ExtCtrls, Buttons, Menus, General;
 
 type
   TSettingsForm = class(TForm)

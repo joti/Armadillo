@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, StdCtrls, Menus, Math, Settings, ComCtrls, ToolWin,
-  Buttons, Printers, IniFiles, jpeg;
+  Buttons, Printers, IniFiles, jpeg, General;
 
 type
   TMainForm = class(TForm)
@@ -177,29 +177,6 @@ var
   function Atszamit(me1,me2:Byte;ertek:Double): Double;
   function Nagyitvizsgal(szam:String):Boolean;
 
-const Fold=250929500;
-      crZoomin=1;
-      crZoomout=2;
-      crCrop=3;
-      crCeruza=4;
-      crRadir=5;
-      crMove=6;
-      crMove2=7;
-      fi1alap=30;
-      fi2alap=60;
-      finalap=45;
-      finalap2=15;
-      finalap3=20;
-      fikalap1=90;
-      fikalap2=80;
-      fikalap3=120;
-      fikalap4=0;
-      fiaalap=0;
-      fiaalap2=1;
-      fiaalap3=2;
-      fia2alap=1;
-      fihalap=1;
-
 implementation
 
 uses About, Parameters1, Page, Unit6, Options, Layers, Splash, Parameters2;
@@ -223,13 +200,6 @@ end;
 function valoy(par: Integer): Integer;
 begin
   result:=trunc((OrigoY-par)*100000/Felbontas/Etna);
-end;
-
-function sgn(par: Double): Integer;
-begin
-  if par>0 then sgn:=1;
-  if par=0 then sgn:=0;
-  if par<0 then sgn:=-1;
 end;
 
 function Atszamit(me1,me2:Byte;ertek:Double):Double;
@@ -258,16 +228,6 @@ begin
             if not (szam[i] in ['0'..'9']) then szamhossz2:=i-1;
           nagyitvizsgal:=True;
       end;
-end;
-
-function arcus(ppp:Double):Double;
-begin
- arcus:=ppp*pi/180;
-end;
-
-procedure Ervmsg;
-begin
- MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
 end;
 
 procedure ifmarvan(Canvas: TCanvas);
@@ -2367,7 +2327,7 @@ end;
 if LayersForm.RetegBox.Items[j]='Fokhálózat' then
 begin
 
-AssignFile(DebugFile,'debug1.txt');
+AssignFile(DebugFile,'debug1.log');
 Rewrite(DebugFile);
 Szinado(Ujform.Szin1);
 if UjForm.Fokchk.Checked=True then

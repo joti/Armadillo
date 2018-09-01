@@ -14,7 +14,8 @@ uses
   Parameters2 in 'Parameters2.pas' {ParametersForm2},
   Splash in 'Splash.pas' {SplashForm},
   Parameters3 in 'Parameters3.pas' {ParametersForm3},
-  Parameters4 in 'Parameters4.pas' {ParametersForm4};
+  Parameters4 in 'Parameters4.pas' {ParametersForm4},
+  General in 'General.pas';
 
 {$R *.RES}
 
