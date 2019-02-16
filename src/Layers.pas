@@ -11,10 +11,10 @@ type
     RetegBox: TListBox;
     RetegfelBtn: TBitBtn;
     RetegleBtn: TBitBtn;
-    RetegOK: TButton;
+    OKBtn: TButton;
     procedure FormCreate(Sender: TObject);
     procedure RetegleBtnClick(Sender: TObject);
-    procedure RetegOKClick(Sender: TObject);
+    procedure OKBtnClick(Sender: TObject);
     procedure RetegfelBtnClick(Sender: TObject);
   private
     { Private declarations }
@@ -47,7 +47,7 @@ begin
      end;
 end;
 
-procedure TLayersForm.RetegOKClick(Sender: TObject);
+procedure TLayersForm.OKBtnClick(Sender: TObject);
 begin
   Close;
 end;

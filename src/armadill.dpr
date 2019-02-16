@@ -26,7 +26,7 @@ begin
   Nyito:=TSplashForm.Create(Application);
   Nyito.Show;
   Nyito.Update;
-  Application.Title := 'Armadillo 1.0';
+  Application.Title := 'Armadillo 2.0';
   Application.CreateForm(TMainForm, MainForm);
   Application.CreateForm(TAboutForm, AboutForm);
   Application.CreateForm(TParametersForm1, ParametersForm1);

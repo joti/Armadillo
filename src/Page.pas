@@ -14,15 +14,15 @@ type
     PapirmagasLabel: TLabel;
     PapirszelesEdit: TEdit;
     PapirmagasEdit: TEdit;
-    PapirOKbtn: TButton;
-    PapirCancelbtn: TButton;
+    PapirOKBtn: TButton;
+    PapirCancelBtn: TButton;
     TajolGroupBox: TGroupBox;
     LapImage1: TImage;
     AlloBtn: TRadioButton;
     FekvoBtn: TRadioButton;
     LapImage2: TImage;
-    SpinButton1: TSpinButton;
-    SpinButton2: TSpinButton;
+    PapirszelesSpin: TSpinButton;
+    PapirMagasSpin: TSpinButton;
     procedure FekvoBtnClick(Sender: TObject);
     procedure AlloBtnClick(Sender: TObject);
     procedure PapirComboboxChange(Sender: TObject);
@@ -30,13 +30,13 @@ type
     procedure PapirmagasEditExit(Sender: TObject);
     procedure PapirszelesEditKeyPress(Sender: TObject; var Key: Char);
     procedure PapirmagasEditKeyPress(Sender: TObject; var Key: Char);
-    procedure PapirOKbtnClick(Sender: TObject);
+    procedure PapirOKBtnClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
-    procedure PapirCancelbtnClick(Sender: TObject);
-    procedure SpinButton1UpClick(Sender: TObject);
-    procedure SpinButton1DownClick(Sender: TObject);
-    procedure SpinButton2UpClick(Sender: TObject);
-    procedure SpinButton2DownClick(Sender: TObject);
+    procedure PapirCancelBtnClick(Sender: TObject);
+    procedure PapirszelesSpinUpClick(Sender: TObject);
+    procedure PapirszelesSpinDownClick(Sender: TObject);
+    procedure PapirMagasSpinUpClick(Sender: TObject);
+    procedure PapirMagasSpinDownClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
   private
@@ -101,8 +101,8 @@ begin
   LapImage2.Visible:=True;
   PapirszelesEdit.Top:=53;
   PapirmagasEdit.Top:=77;
-  SpinButton1.Top:=53;
-  SpinButton2.Top:=77;
+  PapirszelesSpin.Top:=53;
+  PapirmagasSpin.Top:=77;
 end;
 
 procedure TPageForm.AlloBtnClick(Sender: TObject);
@@ -113,8 +113,8 @@ begin
   LapImage1.Visible:=True;
   PapirszelesEdit.Top:=77;
   PapirmagasEdit.Top:=53;
-  SpinButton1.Top:=77;
-  SpinButton2.Top:=53;
+  PapirszelesSpin.Top:=77;
+  PapirmagasSpin.Top:=53;
 end;
 
 procedure TPageForm.PapirComboboxChange(Sender: TObject);
@@ -285,7 +285,7 @@ if Key=#13 then if Szamvizsgal(PapirmagasEdit.Text)=True then
 else if not (Key in ['0'..'9',',',#8]) then Key:=#0;
 end;
 
-procedure TPageForm.PapirOKbtnClick(Sender: TObject);
+procedure TPageForm.PapirOKBtnClick(Sender: TObject);
 begin
   Close;
 end;
@@ -304,7 +304,7 @@ begin
   end;
 end;
 
-procedure TPageForm.PapirCancelbtnClick(Sender: TObject);
+procedure TPageForm.PapirCancelBtnClick(Sender: TObject);
 begin
   PapirCombobox.Itemindex:=Tartindex;
   if TartAllo=True then
@@ -325,7 +325,7 @@ begin
   PapirmagasEdit.Text:=TartMagas;
 end;
 
-procedure TPageForm.SpinButton1UpClick(Sender: TObject);
+procedure TPageForm.PapirszelesSpinUpClick(Sender: TObject);
 begin
   if Szamvizsgal(PapirmagasEdit.Text) then
     Lapy[6,Eta]:=StrToFloat(Copy(PapirmagasEdit.Text,1,szamhossz));
@@ -341,7 +341,7 @@ begin
          end;
 end;
 
-procedure TPageForm.SpinButton1DownClick(Sender: TObject);
+procedure TPageForm.PapirszelesSpinDownClick(Sender: TObject);
 begin
   if Szamvizsgal(PapirmagasEdit.Text) then
     Lapy[6,Eta]:=StrToFloat(Copy(PapirmagasEdit.Text,1,szamhossz));
@@ -357,7 +357,7 @@ begin
          end;
 end;
 
-procedure TPageForm.SpinButton2UpClick(Sender: TObject);
+procedure TPageForm.PapirMagasSpinUpClick(Sender: TObject);
 begin
   if Szamvizsgal(PapirszelesEdit.Text) then
     Lapx[6,Eta]:=StrToFloat(Copy(PapirszelesEdit.Text,1,szamhossz));
@@ -373,7 +373,7 @@ begin
          end;
 end;
 
-procedure TPageForm.SpinButton2DownClick(Sender: TObject);
+procedure TPageForm.PapirMagasSpinDownClick(Sender: TObject);
 begin
   if Szamvizsgal(PapirszelesEdit.Text) then
     Lapx[6,Eta]:=StrToFloat(Copy(PapirszelesEdit.Text,1,szamhossz));
