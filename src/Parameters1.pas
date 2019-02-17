@@ -401,7 +401,7 @@ begin
               MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
               Exit;
              end;
- if UjForm.csalad.Itemindex=1 then
+ if UjForm.CsaladCB.Itemindex=1 then
   begin
    if (fin>89) then
              begin
@@ -452,26 +452,40 @@ begin
   fi2:=fi2alap;
   fin:=finalap;
   fia:=fiaalap;
-  if UjForm.csalad.Itemindex=2 then fik:=fikalap2;
+
+  if UjForm.CsaladCB.Itemindex = 2 then
+    fik := fikalap2;
+
   case aktiv of
-  65: fik:=fikalap3;
-  2,22,23,27: fik:=fikalap1;
-  40..49: fin:=finalap2;
-  107: fin:=finalap3;
-  3: fik:=fikalap2;
-  62,63,64: fia:=fiaalap2;
-  69: begin fik:=fikalap4; fia:=fiaalap3; end;
-  end;
-  DefaultBtn.Enabled:=False;
-  if not Foka.Enabled then
+  65:
+    fik := fikalap3;
+  2,22,23,27:
+    fik := fikalap1;
+  40..49:
+    fin := finalap2;
+  107:
+    fin := finalap3;
+  3:
+    fik := fikalap2;
+  62,63,64:
+    fia:=fiaalap2;
+  69:
     begin
-      VegtelenChk.Checked:=False;
-      Foka.Enabled:=True;
-      Foklabela.Enabled:=True;
-      Iranybox.Enabled:=True;
-      Iranybox.Itemindex:=0;
-      Iranylabel.Enabled:=True;
+      fik:=fikalap4;
+      fia:=fiaalap3;
     end;
+  end;
+
+  DefaultBtn.Enabled:=False;
+  if not Foka.Enabled then begin
+    VegtelenChk.Checked:=False;
+    Foka.Enabled:=True;
+    Foklabela.Enabled:=True;
+    Iranybox.Enabled:=True;
+    Iranybox.Itemindex:=0;
+    Iranylabel.Enabled:=True;
+  end;
+
   FormShow(DefaultBtn);
 end;
 
