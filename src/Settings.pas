@@ -26,10 +26,10 @@ type
     HatarSzinCB: TComboBox;
     PartSzinCB: TComboBox;
     CimLab: TLabel;
-    Label1: TLabel;
-    BitBtn1: TBitBtn;
-    BitBtn2: TBitBtn;
-    BitBtn3: TBitBtn;
+    CimSorLab: TLabel;
+    CloseBtn: TBitBtn;
+    ExitBtn: TBitBtn;
+    OpenBtn: TBitBtn;
     ToChk: TCheckBox;
     ToSzinCB: TComboBox;
     AlkalmazBtn: TButton;
@@ -87,13 +87,13 @@ type
     procedure PartChkClick(Sender: TObject);
     procedure HatarChkClick(Sender: TObject);
     procedure JellemBtnClick(Sender: TObject);
-    procedure Label1MouseDown(Sender: TObject; Button: TMouseButton;
+    procedure CimSorLabMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure Label1MouseMove(Sender: TObject; Shift: TShiftState; X,
+    procedure CimSorLabMouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
-    procedure BitBtn2Click(Sender: TObject);
-    procedure BitBtn1Click(Sender: TObject);
-    procedure BitBtn3Click(Sender: TObject);
+    procedure ExitBtnClick(Sender: TObject);
+    procedure CloseBtnClick(Sender: TObject);
+    procedure OpenBtnClick(Sender: TObject);
     procedure FormDeactivate(Sender: TObject);
     procedure FormActivate(Sender: TObject);
     procedure ToChkClick(Sender: TObject);
@@ -103,7 +103,7 @@ type
     procedure SorrendBtnClick(Sender: TObject);
   private
     { Private declarations }
-    WhereMouse,Delta: TPoint;
+    WhereMouse: TPoint;
     Inside: Boolean;
   public
     { Public declarations }
@@ -383,10 +383,9 @@ begin
   KozMerFok.Color := clWindow;
   KozMerFokLab.Enabled := True;
 
-
   // Ferdetengelyû elhelyezés komponenseinek tiltása
-  Ferdebtn.TabStop := False;
-  Ferdebtn.Checked := False;
+  FerdeBtn.TabStop := False;
+  FerdeBtn.Checked := False;
 
   SegedPolusLab.Enabled := False;
   PolusSzelesLab.Enabled := False;
@@ -569,7 +568,7 @@ begin
     ParametersForm1.ShowModal;
 end;
 
-procedure TSettingsForm.Label1MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+procedure TSettingsForm.CimSorLabMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   if Button = mbLeft then begin
     Inside := (X > 2) and (X < 326) and (Y > 2) and (Y < 21);
@@ -580,7 +579,9 @@ begin
   end;
 end;
 
-procedure TSettingsForm.Label1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+procedure TSettingsForm.CimSorLabMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+var
+  Delta: TPoint;
 begin
   if (ssLeft in Shift) and Inside then begin
     Delta.x := X - WhereMouse.x;
@@ -590,41 +591,41 @@ begin
   end;
 end;
 
-procedure TSettingsForm.BitBtn2Click(Sender: TObject);
+procedure TSettingsForm.ExitBtnClick(Sender: TObject);
 begin
   PageControl1.SetFocus;
   Visible := False;
 end;
 
-procedure TSettingsForm.BitBtn1Click(Sender: TObject);
+procedure TSettingsForm.CloseBtnClick(Sender: TObject);
 begin
   Height := 24;
   Width := 150;
 
-  Label1.Width := 144;
-  BitBtn3.Visible := True;
-  BitBtn2.Left := 129;
+  CimSorLab.Width := 144;
+  OpenBtn.Visible := True;
+  ExitBtn.Left := 129;
 end;
 
-procedure TSettingsForm.BitBtn3Click(Sender: TObject);
+procedure TSettingsForm.OpenBtnClick(Sender: TObject);
 begin
   Width := 346;
   Height := 404;
 
-  Label1.Width := 339;
-  BitBtn2.Left := 324;
-  BitBtn3.Visible := False;
+  CimSorLab.Width := 339;
+  ExitBtn.Left := 324;
+  OpenBtn.Visible := False;
 end;
 
 procedure TSettingsForm.FormDeactivate(Sender: TObject);
 begin
-  Label1.Color := clAppWorkSpace;
+  CimSorLab.Color := clAppWorkSpace;
   CimLab.Font.Color := clSilver;
 end;
 
 procedure TSettingsForm.FormActivate(Sender: TObject);
 begin
-  Label1.Color := clHighlight;
+  CimSorLab.Color := clHighlight;
   CimLab.Font.Color := clWhite;
   PageControl1.SetFocus;
 end;
