@@ -5,11 +5,11 @@ interface
   uses
     Dialogs;
 
-  function Arcus(degree : Double) : Double;
-  function Sgn(num : Double) : Integer;
-  function Almost(a, b : Double) : Boolean;
+  function Arcus(Degree : Double) : Double;
+  function Sgn(Num : Double) : Integer;
+  function Almost(A, B : Double) : Boolean;
 
-  procedure Ervmsg;
+  procedure InvalidValueMsg;
 
   type TCodeName = record
        Code : ShortString;
@@ -27,7 +27,6 @@ interface
         fi1alap = 30;
         fi2alap = 60;
 
-
         finalap=45; {Kúpok ill. Bonne}
         finalap2=15; {Hengerek}
         finalap3=20; {Armadillo}
@@ -43,27 +42,27 @@ interface
 
 implementation
 
-  function Arcus(degree : Double) : Double;
+  function Arcus(Degree : Double) : Double;
   begin
-    result := degree * pi / 180;
+    Result := Degree * Pi / 180;
   end;
 
-  function Sgn(num : Double) : Integer;
+  function Sgn(Num : Double) : Integer;
   begin
-    if num > 0 then
-      result := 1
-    else if num < 0 then
-      result := -1
+    if Num > 0 then
+      Result := 1
+    else if Num < 0 then
+      Result := -1
     else
-      result := 0;
+      Result := 0;
   end;
 
-  function Almost(a, b : Double) : Boolean;
+  function Almost(A, B : Double) : Boolean;
   begin
-    result := (abs(a - b) < 0.1);
+    Result := (Abs(A - B) < 0.1);
   end;
 
-  procedure Ervmsg;
+  procedure InvalidValueMsg;
   begin
     MessageDlg('Érvénytelen méret.', mtInformation, [mbOK], 0);
   end;

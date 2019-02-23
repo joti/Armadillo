@@ -50,38 +50,67 @@ uses Main, Page;
 
 {$R *.DFM}
 
-function szamvizsgalo(szam:String):Boolean;
+function szamvizsgalo(Szam : String) : Boolean;
 var i: Byte;
     szam2: Integer;
 begin
- result:=True;
- if Length(szam)=0 then result:=False else
- if szam='-' then result:=False else
- if not (szam[1] in ['1'..'9','-']) then result:=False else
- if Length(szam)>1 then
-  begin
-    for i:=2 to Length(szam) do
-    begin
-      if szam[i]='-' then result:=False;
+  Result := True;
+  if Length(Szam) = 0 then
+    Result := False
+  else begin
+    if Szam = '-' then
+      Result := False
+    else if not (Szam[1] in ['1'..'9','-']) then
+      Result := False
+    else if Length(Szam) > 1 then begin
+      for I := 2 to Length(Szam) do begin
+        if Szam[i] = '-' then
+          Result := False;
+      end;
     end;
   end;
- if result=True then
- begin
-  if StrToInt(szam)>179 then result:=False else
-  begin
-   szam2:=StrToInt(szam);
-   case aktiv of
-    2: if szam2>179 then result:=False;
-    3: if szam2>89 then result:=False;
-    21,23,24: if szam2>179 then result:=False;
-    20,22,25,26,27,65: if szam2>179 then result:=False;
-    41,43,44,45,46: if szam2>89 then result:=False;
-    60: if szam2>89 then result:=False;
-    69: if abs(szam2)>89 then result:=False;
+
+  if Result then begin
+    if StrToInt(Szam) > 179 then
+      Result := False
+    else begin
+      Szam2 := StrToInt(Szam);
+      case AktivVetulet of
+      // Valós síkvetületek
+      2: // Sztereografikus
+        if Szam2 > 179 then
+          Result := False;
+      3: // Gnomonikus
+        if Szam2 > 89 then
+          Result := False;
+      // Valós kúpvetületek
+      21,23,24:
+        if Szam2 > 179 then
+          Result := False;
+      20,22,25,26,27:
+        if Szam2 > 179 then
+          Result := False;
+      // Valós hengervetületek
+      41,43,44,45,46:
+        if Szam2 > 89 then
+          Result := False;
+      // Képzetes kúpvetületek
+      60: // Bonne-féle
+        if Szam2 > 89 then
+          Result := False;
+      65: // Szögtartó polikónikus
+        if Szam2 > 179 then
+          Result := False;
+      69: // Lagrange-féle
+        if Abs(Szam2) > 89 then
+          Result:=False;
    end;
   end;
  end;
- if (aktiv=27) and (szam='0') then result:=True;
+
+ // Perspektív kúpvetületnél a 0 is értelmezett
+ if (AktivVetulet = 27) and (szam = '0') then
+   Result:=True;
 end;
 
 procedure TParametersForm1.FormShow(Sender: TObject);
@@ -127,7 +156,7 @@ procedure TParametersForm1.FormShow(Sender: TObject);
  end;
 
 begin
-  case aktiv of
+  case AktivVetulet of
   2,3:
    begin
     Alapmeret;
@@ -353,7 +382,7 @@ end;
 
 procedure TParametersForm1.OKBtnClick(Sender: TObject);
 begin
- case aktiv of
+ case AktivVetulet of
  21,23,24,27:begin
            if szamvizsgalo(Fok1.Text) then fi1:=StrToInt(Fok1.Text) else
              begin
@@ -369,7 +398,7 @@ begin
              end;
           end;
  20,22,25,26,41,43,45,46,60,107:
-           if szamvizsgalo(Fokn.Text) or ((aktiv in [46,107]) and (Fokn.Text='0'))
+           if szamvizsgalo(Fokn.Text) or ((AktivVetulet in [46,107]) and (Fokn.Text='0'))
             then fin:=StrToInt(Fokn.Text)
             else
              begin
@@ -378,9 +407,9 @@ begin
               Exit;
              end;
  end;
- case aktiv of
+ case AktivVetulet of
  2,3,22,23,27,44,45,46,65,69:
-           if szamvizsgalo(Fokk.Text) or ((aktiv=69) and (Fokk.Text='0'))
+           if szamvizsgalo(Fokk.Text) or ((AktivVetulet=69) and (Fokk.Text='0'))
            then fik:=StrToInt(Fokk.Text)
            else
              begin
@@ -389,13 +418,13 @@ begin
               Exit;
              end;
  end;
- if (aktiv=27) and (((fi1+fi2)/2>=90) or (((fi1=90) or (fi1=0)) and (fi1=fi2)))then
+ if (AktivVetulet=27) and (((fi1+fi2)/2>=90) or (((fi1=90) or (fi1=0)) and (fi1=fi2)))then
              begin
               Fok2.Setfocus;
               MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
               Exit;
              end;
- if (aktiv=27) and (fik>(fi1+fi2)/2+90) then
+ if (AktivVetulet=27) and (fik>(fi1+fi2)/2+90) then
              begin
               Fokk.Setfocus;
               MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
@@ -417,7 +446,7 @@ begin
               Exit;
              end;
   end;
- case aktiv of
+ case AktivVetulet of
  27,46,62,63,64,69:
            if not szamvizsgal(Foka.Text)
            then
@@ -435,7 +464,7 @@ begin
            else
             begin
              fia:=StrToFloat(Foka.Text);
-             if (aktiv=69) and (fia<=1) then
+             if (AktivVetulet=69) and (fia<=1) then
               begin
                Foka.Setfocus;
                MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
@@ -456,7 +485,7 @@ begin
   if UjForm.CsaladCB.Itemindex = 2 then
     fik := fikalap2;
 
-  case aktiv of
+  case AktivVetulet of
   65:
     fik := fikalap3;
   2,22,23,27:
@@ -491,7 +520,7 @@ end;
 
 procedure TParametersForm1.Fok1KeyPress(Sender: TObject; var Key: Char);
 begin
-  if aktiv=69 then
+  if AktivVetulet=69 then
    begin
     if not (Key in ['0'..'9','-',#8]) then Key:=#0
     else DefaultBtn.Enabled:=True;

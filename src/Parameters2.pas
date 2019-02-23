@@ -32,7 +32,7 @@ uses Main;
 
 procedure TParametersForm2.FormShow(Sender: TObject);
 begin
-  case aktiv of
+  case AktivVetulet of
   89:
    begin
      Finlabel.caption:='A két vetület közötti határoló szélesség:';

@@ -37,10 +37,10 @@ type
     Sorrend: TMenuItem;
     GroupBox1: TGroupBox;
     ParSurusegLab: TLabel;
-    ParSurusegFok: TEdit;
+    ParSurusegFokEd: TEdit;
     ParSurusegFokLab: TLabel;
     MerSurusegLab: TLabel;
-    MerSurusegFok: TEdit;
+    MerSurusegFokEd: TEdit;
     MerSurusegFokLab: TLabel;
     TeritoChk: TCheckBox;
     GroupBox2: TGroupBox;
@@ -51,8 +51,8 @@ type
     GroupBox3: TGroupBox;
     SegMerSurusegLab: TLabel;
     SegParSurusegLab: TLabel;
-    SegParSurusegFok: TEdit;
-    SegMerSurusegFok: TEdit;
+    SegParSurusegFokEd: TEdit;
+    SegMerSurusegFokEd: TEdit;
     SegMerSurusegFokLab: TLabel;
     SegParSurusegFokLab: TLabel;
     GroupBox4: TGroupBox;
@@ -64,13 +64,13 @@ type
     NormalBtn: TRadioButton;
     FerdeBtn: TRadioButton;
     KozMerLab: TLabel;
-    KozMerFok: TEdit;
+    KozMerFokEd: TEdit;
     KozMerFokLab: TLabel;
     SegedPolusLab: TLabel;
     PolusSzelesLab: TLabel;
     PolusHosszuLab: TLabel;
-    PolusSzelesFok: TEdit;
-    PolusHosszuFok: TEdit;
+    PolusSzelesFokEd: TEdit;
+    PolusHosszuFokEd: TEdit;
     PolusSzelesFokLab: TLabel;
     PolusHosszuFokLab: TLabel;
     KezdoMerLab: TLabel;
@@ -98,7 +98,7 @@ type
     procedure FormActivate(Sender: TObject);
     procedure ToChkClick(Sender: TObject);
     procedure AlkalmazBtnClick(Sender: TObject);
-    procedure KozMerFokKeyPress(Sender: TObject; var Key: Char);
+    procedure KozMerFokEdKeyPress(Sender: TObject; var Key: Char);
     procedure SorrendClick(Sender: TObject);
     procedure SorrendBtnClick(Sender: TObject);
   private
@@ -276,13 +276,13 @@ begin
   origomas:=False;
 
   if VetuletCB.Itemindex > 19 then
-    aktiv := 80 + 20 * CsaladCB.Itemindex + VetuletCB.Itemindex
+    AktivVetulet := 80 + 20 * CsaladCB.Itemindex + VetuletCB.Itemindex
   else
-    aktiv := 20 * CsaladCB.Itemindex + VetuletCB.Itemindex;
-  if aktiv in [2,3,20..27,41,43,44,45,46,60,62,63,64,65,69,89,102,107,94,95,98,109,110]
+    AktivVetulet := 20 * CsaladCB.Itemindex + VetuletCB.Itemindex;
+  if AktivVetulet in [2,3,20..27,41,43,44,45,46,60,62,63,64,65,69,89,102,107,94,95,98,109,110]
    then JellemBtn.Enabled:=True
    else JellemBtn.Enabled:=False;
-  case aktiv of
+  case AktivVetulet of
   46: begin
        ParametersForm1.VegtelenChk.Checked:=False;
        ParametersForm1.Foklabela.Enabled:=True;
@@ -304,7 +304,7 @@ begin
        ParametersForm2.Finbox.Itemindex:=0;
       end;
   end;
-  case aktiv of
+  case AktivVetulet of
   2,22,23,27: fik:=fikalap1;
   3,44,45,46: fik:=fikalap2;
   62,63,64: fia:=fiaalap2;
@@ -327,12 +327,12 @@ begin
 
   PolusSzelesLab.Enabled := True;
   PolusSzelesFokLab.Enabled := True;
-  PolusSzelesFok.Enabled:=True;
-  PolusSzelesFok.Color:=clWindow;
+  PolusSzelesFokEd.Enabled:=True;
+  PolusSzelesFokEd.Color:=clWindow;
 
   PolusHosszuLab.Enabled := True;
-  PolusHosszuFok.Color:=clWindow;
-  PolusHosszuFok.Enabled:=True;
+  PolusHosszuFokEd.Color:=clWindow;
+  PolusHosszuFokEd.Enabled:=True;
   PolusHosszuFokLab.Enabled := True;
 
   KezdoMerLab.Enabled := True;
@@ -344,8 +344,8 @@ begin
   NormalBtn.TabStop := False;
   NormalBtn.Checked := False;
   KozMerLab.Enabled := False;
-  KozMerFok.Enabled := False;
-  KozMerFok.Color := clMenu;
+  KozMerFokEd.Enabled := False;
+  KozMerFokEd.Color := clMenu;
   KozMerFokLab.Enabled := False;
 
   // Segédfokhálózat engedélyezése
@@ -357,10 +357,10 @@ begin
     Groupbox3.Enabled := True;
     SegParSurusegLab.Enabled := True;
     SegMerSurusegLab.Enabled := True;
-    SegParSurusegFok.Enabled := True;
-    SegParSurusegFok.Color := clWindow;
-    SegMerSurusegFok.Enabled := True;
-    SegMerSurusegFok.Color := clWindow;
+    SegParSurusegFokEd.Enabled := True;
+    SegParSurusegFokEd.Color := clWindow;
+    SegMerSurusegFokEd.Enabled := True;
+    SegMerSurusegFokEd.Color := clWindow;
     SegParSurusegFokLab.Enabled := True;
     SegMerSurusegFokLab.Enabled := True;
 
@@ -379,8 +379,8 @@ begin
   // Normális elhelyezés komponenseinek engedélyezése
   NormalBtn.TabStop := True;
   KozMerLab.Enabled := True;
-  KozMerFok.Enabled := True;
-  KozMerFok.Color := clWindow;
+  KozMerFokEd.Enabled := True;
+  KozMerFokEd.Color := clWindow;
   KozMerFokLab.Enabled := True;
 
   // Ferdetengelyû elhelyezés komponenseinek tiltása
@@ -389,12 +389,12 @@ begin
 
   SegedPolusLab.Enabled := False;
   PolusSzelesLab.Enabled := False;
-  PolusSzelesFok.Enabled := False;
-  PolusSzelesFok.Color := clMenu;
+  PolusSzelesFokEd.Enabled := False;
+  PolusSzelesFokEd.Color := clMenu;
   PolusSzelesFokLab.Enabled := False;
   PolusHosszuLab.Enabled := False;
-  PolusHosszuFok.Color := clMenu;
-  PolusHosszuFok.Enabled := False;
+  PolusHosszuFokEd.Color := clMenu;
+  PolusHosszuFokEd.Enabled := False;
   PolusHosszuFokLab.Enabled := False;
 
   KezdoMerLab.Enabled := False;
@@ -408,12 +408,12 @@ begin
 
   Groupbox3.Enabled := False;
   SegParSurusegLab.Enabled := False;
-  SegParSurusegFok.Enabled := False;
-  SegParSurusegFok.Color := clMenu;
+  SegParSurusegFokEd.Enabled := False;
+  SegParSurusegFokEd.Color := clMenu;
   SegParSurusegFokLab.Enabled := False;
   SegMerSurusegLab.Enabled := False;
-  SegMerSurusegFok.Enabled := False;
-  SegMerSurusegFok.Color := clMenu;
+  SegMerSurusegFokEd.Enabled := False;
+  SegMerSurusegFokEd.Color := clMenu;
   SegMerSurusegFokLab.Enabled := False;
 
   Groupbox4.Enabled := False;
@@ -432,10 +432,10 @@ begin
     FokSzinCB.Color := clWindow;
 
     Groupbox1.Enabled := True;
-    ParSurusegFok.Enabled := True;
-    ParSurusegFok.Color := clWindow;
-    MerSurusegFok.Enabled := True;
-    MerSurusegFok.Color := clWindow;
+    ParSurusegFokEd.Enabled := True;
+    ParSurusegFokEd.Color := clWindow;
+    MerSurusegFokEd.Enabled := True;
+    MerSurusegFokEd.Color := clWindow;
     TeritoChk.Enabled := True;
 
     ParSurusegLab.Enabled := True;
@@ -455,10 +455,10 @@ begin
     FokSzinCB.Color := clMenu;
 
     Groupbox1.Enabled := False;
-    ParSurusegFok.Enabled := False;
-    ParSurusegFok.Color := clMenu;
-    MerSurusegFok.Enabled := False;
-    MerSurusegFok.Color := clMenu;
+    ParSurusegFokEd.Enabled := False;
+    ParSurusegFokEd.Color := clMenu;
+    MerSurusegFokEd.Enabled := False;
+    MerSurusegFokEd.Color := clMenu;
     TeritoChk.Enabled := False;
 
     ParSurusegLab.Enabled := False;
@@ -484,12 +484,12 @@ begin
 
     Groupbox3.Enabled := True;
     SegParSurusegLab.Enabled := True;
-    SegParSurusegFok.Enabled := True;
-    SegParSurusegFok.Color := clWindow;
+    SegParSurusegFokEd.Enabled := True;
+    SegParSurusegFokEd.Color := clWindow;
     SegParSurusegFokLab.Enabled := True;
     SegMerSurusegLab.Enabled := True;
-    SegMerSurusegFok.Enabled := True;
-    SegMerSurusegFok.Color := clWindow;
+    SegMerSurusegFokEd.Enabled := True;
+    SegMerSurusegFokEd.Color := clWindow;
     SegMerSurusegFokLab.Enabled := True;
 
     Groupbox4.Enabled := True;
@@ -505,12 +505,12 @@ begin
 
     Groupbox3.Enabled := False;
     SegParSurusegLab.Enabled := False;
-    SegParSurusegFok.Enabled := False;
-    SegParSurusegFok.Color := clMenu;
+    SegParSurusegFokEd.Enabled := False;
+    SegParSurusegFokEd.Color := clMenu;
     SegParSurusegFokLab.Enabled := False;
     SegMerSurusegLab.Enabled := False;
-    SegMerSurusegFok.Enabled := False;
-    SegMerSurusegFok.Color := clMenu;
+    SegMerSurusegFokEd.Enabled := False;
+    SegMerSurusegFokEd.Color := clMenu;
     SegMerSurusegFokLab.Enabled := False;
 
     Groupbox4.Enabled := False;
@@ -558,11 +558,11 @@ end;
 
 procedure TSettingsForm.JellemBtnClick(Sender: TObject);
 begin
-  if aktiv in [89,102] then
+  if AktivVetulet in [89,102] then
     ParametersForm2.ShowModal
-  else if aktiv in [94,95,98] then
+  else if AktivVetulet in [94,95,98] then
     ParametersForm3.Showmodal
-  else if aktiv in [109,110] then
+  else if AktivVetulet in [109,110] then
     ParametersForm4.Showmodal
   else
     ParametersForm1.ShowModal;
@@ -635,7 +635,7 @@ begin
   MainForm.FrissitClick(AlkalmazBtn);
 end;
 
-procedure TSettingsForm.KozMerFokKeyPress(Sender: TObject; var Key: Char);
+procedure TSettingsForm.KozMerFokEdKeyPress(Sender: TObject; var Key: Char);
 begin
   if not (Key in ['-','0'..'9',#8]) then Key:=#0;
 end;

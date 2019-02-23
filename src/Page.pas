@@ -156,7 +156,7 @@ if Szamvizsgal(PapirszelesEdit.Text)=True then
            begin
              PapirszelesEdit.Setfocus;
              MessageDlg(Format('A méretnek %d %s alatt kell lennie',
-              [Max,MainForm.Egyseg.Items[Eta]]),
+              [Max,MainForm.EgysegCB.Items[Eta]]),
               mtInformation,[mbOK],0);
            end;
        end
@@ -194,7 +194,7 @@ if Szamvizsgal(PapirmagasEdit.Text)=True then
            begin
              PapirmagasEdit.Setfocus;
              MessageDlg(Format('A méretnek %d %s alatt kell lennie',
-              [Max,MainForm.Egyseg.Items[Eta]]),
+              [Max,MainForm.EgysegCB.Items[Eta]]),
               mtInformation,[mbOK],0);
            end;
        end
@@ -233,7 +233,7 @@ if Key=#13 then if Szamvizsgal(PapirszelesEdit.Text)=True then
            begin
              PapirszelesEdit.Setfocus;
              MessageDlg(Format('A méretnek %d %s alatt kell lennie',
-              [Max,MainForm.Egyseg.Items[Eta]]),
+              [Max,MainForm.EgysegCB.Items[Eta]]),
               mtInformation,[mbOK],0);
            end;
        end
@@ -273,7 +273,7 @@ if Key=#13 then if Szamvizsgal(PapirmagasEdit.Text)=True then
            begin
              PapirmagasEdit.Setfocus;
              MessageDlg(Format('A méretnek %d %s alatt kell lennie',
-              [Max,MainForm.Egyseg.Items[Eta]]),
+              [Max,MainForm.EgysegCB.Items[Eta]]),
               mtInformation,[mbOK],0);
            end;
          end

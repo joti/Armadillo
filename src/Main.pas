@@ -9,16 +9,16 @@ interface
 
   type
     TMainForm = class(TForm)
-      Szeles: TEdit;
+      SzelesEd: TEdit;
       Egyseglabel: TLabel;
-      Magas: TEdit;
+      MagasEd: TEdit;
       SzelesImage: TImage;
       MagasImage: TImage;
-      Egyseg: TComboBox;
+      EgysegCB: TComboBox;
       Malabel: TLabel;
-      Meretarany: TEdit;
+      MeretaranyEd: TEdit;
       Milliolabel: TLabel;
-      Nagyit: TComboBox;
+      NagyitasCB: TComboBox;
       Nagyitlabel: TLabel;
       ScrollBox1: TScrollBox;
       Abra: TImage;
@@ -76,15 +76,15 @@ interface
         Shift: TShiftState; X, Y: Integer);
       procedure FormCreate(Sender: TObject);
       procedure FrissitClick(Sender: TObject);
-      procedure NagyitChange(Sender: TObject);
+      procedure NagyitasCBChange(Sender: TObject);
       procedure MentesClick(Sender: TObject);
       procedure NevjegyClick(Sender: TObject);
       procedure BeallitClick(Sender: TObject);
       procedure PapirmenuClick(Sender: TObject);
-      procedure EgysegChange(Sender: TObject);
+      procedure EgysegCBChange(Sender: TObject);
       procedure StatuszsoreClick(Sender: TObject);
-      procedure NagyitKeyPress(Sender: TObject; var Key: Char);
-      procedure MeretaranyKeyPress(Sender: TObject; var Key: Char);
+      procedure NagyitasCBKeyPress(Sender: TObject; var Key: Char);
+      procedure MeretaranyEdKeyPress(Sender: TObject; var Key: Char);
       procedure FormResize(Sender: TObject);
       procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
       procedure EszkoztareClick(Sender: TObject);
@@ -97,10 +97,10 @@ interface
       procedure MeretezoeClick(Sender: TObject);
       procedure KilepesClick(Sender: TObject);
       procedure NyomtatClick(Sender: TObject);
-      procedure EgysegEnter(Sender: TObject);
-      procedure MeretaranyEnter(Sender: TObject);
-      procedure NagyitEnter(Sender: TObject);
-      procedure EgysegKeyPress(Sender: TObject; var Key: Char);
+      procedure EgysegCBEnter(Sender: TObject);
+      procedure MeretaranyEdEnter(Sender: TObject);
+      procedure NagyitasCBEnter(Sender: TObject);
+      procedure EgysegCBKeyPress(Sender: TObject; var Key: Char);
       procedure Edit1KeyPress(Sender: TObject; var Key: Char);
       procedure MozgatBtnClick(Sender: TObject);
       procedure KozepreBtnClick(Sender: TObject);
@@ -111,33 +111,30 @@ interface
       { Private declarations }
     public
       { Public declarations }
-      procedure GetMinMax (var MinMaxMessage: TWMGetMinMaxInfo);
-       message wm_GetMinMaxInfo;
-      procedure AppMessage (var Msg: TMsg;
-       var Handled: Boolean);
+      procedure Frissites (Mode : Byte); // 1 - ábra frissítése, 2 - nyomtatás, 3 - plotter fájlba mentés
+      procedure GetMinMax (var MinMaxMessage: TWMGetMinMaxInfo); message wm_GetMinMaxInfo;
+      procedure AppMessage (var Msg: TMsg; var Handled: Boolean);
     end;
 
   var
     MainForm: TMainForm;
     Zarora: Boolean=False;
     Bitmap: TBitmap;
-    jp: TJPegImage;
     Rajzol, Gyik, Lehet, Lupe: Boolean;
     Lupe2: Boolean=False;
     Sajt2: Boolean=False;
     north: Boolean=True;
     Ni, Balszel, Jobbszel, Felsoszel, Alsoszel: Integer;
-    omovex, omovey, komovex, komovey: Integer;
     OrigoX, OrigoY, Felbontas: Integer;
-    Baltop, Jobbtop, Fenntop, Lenntop, Etna, VEtna, Vezuv, Vezuv3: Integer;
-    Aktiv: Byte=0;
+    Baltop, Jobbtop, Fenntop, Lenntop: Integer;
+    Etna, VEtna, Vezuv, Vezuv3: Integer;
+    AktivVetulet: Byte=0;
     Szamhossz2: Byte;
     Vet: array[0..220] of string;
     j,l, Winni: Byte;
     UjForm: TSettingsForm;
     Alapdir: String;
     Ini, Filesv, txt: Textfile;
-    Plt: Boolean=False;
     SI: array[0..4] of String;
     Lapx,Lapy: Array[0..6,0..6] of Double;
     Lx,Ly: Double;
@@ -145,46 +142,60 @@ interface
     Igazigaz: Boolean=False;
     Sajt: Boolean=False;
     Sajt3: Boolean=False;
-    Nyom: Boolean=False;
     fel: Boolean=True;
     egyik, masik, zoom, veg: TPoint;
     Zoomol: Boolean=False;
     Crop: Boolean=False;
-    Mer: Boolean=False;
     Etna2: Integer=20;
     Elso: Boolean=True;
     CropScrollHorz, CropScrollVert: Integer;
     fi1, fi2, fin: Byte;
     fik, fih: SmallInt;
     fis, fia, fia2: Double;
-    Marvan: Boolean=False;
     Vetvalt: Boolean=True;
     Valt: Boolean=False;
     Lapba: Boolean=False;
-    most1, most2: TPoint;
-    SBHelyX, SBHelyY: SmallInt;
     Plusz: String;
     IniFile: TIniFile;
     Egyenes: Boolean=False;
     AHeight, AWidth: Integer;
-    SBMozog1: Boolean=False;
-    SBMozog2: Boolean=False;
-    SBMozog3: Boolean=False;
-    SBMozog4: Boolean=False;
-    lapmovex, lapmovey: Integer;
-    Scr: TPoint;
-    DebugFile : TextFile;{Textfile for debugging}
-    function Atszamit(me1,me2:Byte;ertek:Double): Double;
+
+    DebugFile : TextFile; { Textfile for debugging }
+
+    function Atszamit(Egyseg1, Egyseg2 : Byte; Ertek : Double) : Double;
     function Nagyitvizsgal(szam:String):Boolean;
 
 implementation
 
   uses About, Parameters1, Page, Unit6, Options, Layers, Splash, Parameters2;
 
+  var
+    FormPos1, FormPos2: TPoint;
+    SBMeret: TPoint;
+    SBHelyX, SBHelyY: SmallInt;
+    OMoveX, OMoveY, KoMoveX, KoMoveY: Integer;
+    lapmovex, lapmovey: Integer;
+
+    TavolsagMeres: Boolean = False;
+    VanMeres: Boolean=False;
+
+    // Görgetõsáv mozgatását vezérlõ attribútumok
+    SBFel    : Boolean = False;
+    SBLe     : Boolean = False;
+    SBBalra  : Boolean = False;
+    SBJobbra : Boolean = False;
+
+  const
+    DRAWMODE = 1;
+    PRINTMODE = 2;
+    PLTMODE = 3;
+    INCHUNIT = 3;
+
   {$R *.DFM}
 
   procedure TMainForm.GetMinMax(var MinMaxMessage: TWMGetMinMaxInfo);
   begin
+    // Form legkisebb lehetséges mérete
     with MinMaxMessage.MinMaxInfo^ do
     begin
       ptMinTrackSize.x := 672;
@@ -192,29 +203,31 @@ implementation
     end;
   end;
 
-  function valox(par: Integer): Integer;
+  function ValosX(X: Integer) : Integer;
   begin
-    result := trunc((par-OrigoX)*100000/Felbontas/Etna);
+    Result := Trunc((X - OrigoX) * 100000 / Felbontas / Etna);
   end;
 
-  function valoy(par: Integer): Integer;
+  function ValosY(Y: Integer) : Integer;
   begin
-    result := trunc((OrigoY-par)*100000/Felbontas/Etna);
+    Result := Trunc((OrigoY - Y) * 100000 / Felbontas / Etna);
   end;
 
-  function Atszamit(me1,me2:Byte;ertek:Double):Double;
+  function Atszamit(Egyseg1, Egyseg2 : Byte; Ertek : Double) : Double;
   begin
-    result := 0;
-    case me1 of
-    0: result := ertek/25.39;
-    1: result := ertek/2.539;
-    2: result := ertek;
-    3: result := ertek/1000;
+    Result := 0;
+
+    case Egyseg1 of
+    0: Result := Ertek / 25.39;
+    1: Result := Ertek / 2.539;
+    2: Result := Ertek;
+    3: Result := Ertek / 1000;
     end;
-    case me2 of
-    0: result := result*25.39;
-    1: result := result*2.539;
-    3: result := result*1000;
+
+    case Egyseg2 of
+    0: Result := Result * 25.39;
+    1: Result := Result * 2.539;
+    3: Result := Result * 1000;
     end;
   end;
 
@@ -230,72 +243,80 @@ implementation
         end;
   end;
 
-  procedure ifmarvan(Canvas: TCanvas);
+  procedure MeresTorles(Canvas: TCanvas);
   begin
-    if Marvan then
-    begin
-      Canvas.Moveto(veg.X-7,veg.Y-7);
-      Canvas.Lineto(veg.X+7,veg.Y+7);
-      Canvas.Moveto(veg.X+7,veg.Y-7);
-      Canvas.Lineto(veg.X-7,veg.Y+7);
-      Canvas.Moveto(Zoom.X-7,Zoom.Y-7);
-      Canvas.Lineto(Zoom.X+7,Zoom.Y+7);
-      Canvas.Moveto(Zoom.X+7,Zoom.Y-7);
-      Canvas.Lineto(Zoom.X-7,Zoom.Y+7);
+    if VanMeres then begin
+      Canvas.Moveto(veg.X - 7, veg.Y - 7);
+      Canvas.Lineto(veg.X + 7, veg.Y + 7);
+      Canvas.Moveto(veg.X + 7, veg.Y - 7);
+      Canvas.Lineto(veg.X - 7, veg.Y + 7);
+
+      Canvas.Moveto(Zoom.X - 7, Zoom.Y - 7);
+      Canvas.Lineto(Zoom.X + 7, Zoom.Y + 7);
+      Canvas.Moveto(Zoom.X + 7, Zoom.Y - 7);
+      Canvas.Lineto(Zoom.X - 7, Zoom.Y + 7);
+
       Canvas.Moveto(Zoom.x,Zoom.y);
       Canvas.Lineto(veg.X,veg.Y);
     end;
-    Marvan := False;
+    VanMeres := False;
   end;
 
-  procedure TMainForm.AppMessage (var Msg: TMsg;
-    var Handled: Boolean);
+  procedure TMainForm.AppMessage (var Msg: TMsg; var Handled: Boolean);
   begin
-    if (Msg.Message=wm_Char) and (Msg.wparam=27)
-     then
-      begin
-       if OptionsForm.Active then OptionsForm.Close;
-       if ParametersForm1.Active then ParametersForm1.Close;
-       if PageForm.Active then
-        begin
-         PageForm.PapirCancelBtnClick(Application);
-         PageForm.Close;
-        end;
-       if AboutForm.Active then AboutForm.Close;
-       if LayersForm.Active then LayersForm.Close;
-       if ParametersForm2.Active then ParametersForm2.Close;
-       MainForm.FormActivate(Application);
+    if (Msg.Message = wm_Char) and (Msg.wparam = 27) then begin // ESC leütése
+      if OptionsForm.Active then
+        OptionsForm.Close;
+
+      if ParametersForm1.Active then
+        ParametersForm1.Close;
+
+      if PageForm.Active then begin
+        PageForm.PapirCancelBtnClick(Application);
+        PageForm.Close;
       end;
-    if (Msg.Message=wm_KeyDown) and (MainForm.Active)
-     then
+
+      if AboutForm.Active then
+        AboutForm.Close;
+
+      if LayersForm.Active then
+        LayersForm.Close;
+
+      if ParametersForm2.Active then
+        ParametersForm2.Close;
+
+      MainForm.FormActivate(Application);
+    end else if (Msg.Message = wm_KeyDown) and (MainForm.Active) then begin
       case msg.lparam of
-      21495809: SBMozog1 := True;
-      22020097: SBMozog2 := True;
-      21692417: SBMozog3 := True;
-      21823489: SBMozog4 := True;
+      21495809: SBFel := True;
+      22020097: SBLe := True;
+      21692417: SBBalra := True;
+      21823489: SBJobbra := True;
       end;
-    if (Msg.Message=wm_KeyUp) and (MainForm.Active)
-     then
+    end else if (Msg.Message = wm_KeyUp) and (MainForm.Active) then begin
       case msg.lparam of
-      -1052246015: SBMozog1 := False;
-      -1051721727: SBMozog2 := False;
-      -1052049407: SBMozog3 := False;
-      -1051918335: SBMozog4 := False;
+      -1052246015: SBFel := False;
+      -1051721727: SBLe := False;
+      -1052049407: SBBalra := False;
+      -1051918335: SBJobbra := False;
       end;
+    end;
   end;
 
-  function hakisx(x:Integer):Integer;
+  function KisXKorr(X : Integer) : Integer;
   begin
-    if Bitmap.Width<Scr.x
-     then result := x-trunc((Scr.x-Bitmap.Width)/2)+2
-     else result := x;
+    if Bitmap.Width < SBMeret.X then
+      Result := X - Trunc((SBMeret.X - Bitmap.Width) / 2) + 2
+    else
+      Result := X;
   end;
 
-  function hakisy(y:Integer):Integer;
+  function KisYKorr(Y : Integer) : Integer;
   begin
-    if Bitmap.Height<Scr.y
-     then result := y-trunc((Scr.y-Bitmap.Height)/2)+2
-     else result := y;
+    if Bitmap.Height < SBMeret.Y then
+      Result := Y - Trunc((SBMeret.Y - Bitmap.Height) / 2) + 2
+    else
+      Result := Y;
   end;
 
   procedure TMainForm.AbraMouseDown(Sender: TObject; Button: TMouseButton;
@@ -306,29 +327,29 @@ implementation
     crMove2:
      begin
        Abra.Cursor := crDefault;
-       masik.X := valox(X);
-       masik.Y := valoy(Y);
+       masik.X := ValosX(X);
+       masik.Y := ValosY(Y);
        origomas := True;
-       omovex := omovex-masik.x+egyik.x;
-       omovey := omovey-masik.y+egyik.y;
+       OMoveX := OMoveX-masik.x+egyik.x;
+       OMoveY := OMoveY-masik.y+egyik.y;
        KozepreBtn.Enabled := True;
        FrissitClick(MozgatBtn);
      end;
     crMove:
      begin
-      if Mer then
+      if TavolsagMeres then
       begin
         Abra.Canvas.Pen.Mode := pmNotXor;
         Abra.Canvas.Pen.Color := clBlack;
-        if Marvan then
+        if VanMeres then
         begin
           StatusBar3.Visible := False;
-          ifmarvan(Abra.Canvas);
+          MeresTorles(Abra.Canvas);
         end;
-        Zoom.x := hakisx(X);
-        Zoom.Y := hakisy(Y);
-        veg.x := hakisx(X);
-        veg.Y := hakisy(Y);
+        Zoom.x := KisXKorr(X);
+        Zoom.Y := KisYKorr(Y);
+        veg.x := KisXKorr(X);
+        veg.Y := KisYKorr(Y);
         Abra.Canvas.Moveto(veg.X-7,veg.Y-7);
         Abra.Canvas.Lineto(veg.X+7,veg.Y+7);
         Abra.Canvas.Moveto(veg.X+7,veg.Y-7);
@@ -337,12 +358,12 @@ implementation
       else
       begin
        Abra.Cursor := crMove2;
-       egyik.x := valox(X);
-       egyik.y := valoy(Y);
-       Abra.Canvas.Moveto(hakisx(X)-5,hakisy(Y)-5);
-       Abra.Canvas.Lineto(hakisx(X)+5,hakisy(Y)+5);
-       Abra.Canvas.Moveto(hakisx(X)+5,hakisy(Y)-5);
-       Abra.Canvas.Lineto(hakisx(X)-5,hakisy(Y)+5);
+       egyik.x := ValosX(X);
+       egyik.y := ValosY(Y);
+       Abra.Canvas.Moveto(KisXKorr(X)-5,KisYKorr(Y)-5);
+       Abra.Canvas.Lineto(KisXKorr(X)+5,KisYKorr(Y)+5);
+       Abra.Canvas.Moveto(KisXKorr(X)+5,KisYKorr(Y)-5);
+       Abra.Canvas.Lineto(KisXKorr(X)-5,KisYKorr(Y)+5);
       end;
      end;
     crZoomout:
@@ -374,226 +395,229 @@ implementation
       SetCursor(Screen.Cursors[crCeruza]);
       if ssCtrl in Shift then
        begin
-        Zoom.x := hakisx(X);
-        Zoom.Y := hakisy(Y);
-        veg.x := hakisx(X);
-        veg.Y := hakisy(Y);
+        Zoom.x := KisXKorr(X);
+        Zoom.Y := KisYKorr(Y);
+        veg.x := KisXKorr(X);
+        veg.Y := KisYKorr(Y);
         Egyenes := True;
        end
       else if ssShift in Shift then SetCursor(Screen.Cursors[crRadir]);
-      Abra.Canvas.Moveto(hakisx(x),hakisy(y));
+      Abra.Canvas.Moveto(KisXKorr(x),KisYKorr(y));
       Rajzol := True;
      end;
     end;
    end;
   end;
 
-  procedure TMainForm.AbraMouseMove(Sender: TObject; Shift: TShiftState; X,
-    Y: Integer);
+  procedure TMainForm.AbraMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
   var Curpos, Curpos2: TPoint;
       o,i: Byte;
       m: TPoint;
   begin
-   if ssLeft in Shift then begin
-    if (Abra.Cursor=crZoomin) or (Abra.Cursor=crCrop) then
-     begin
-       if Rajzol then
-        begin
-         Zoomshape.Width := abs(X-Zoom.x);
-         Zoomshape.Height := abs(Y-Zoom.y);
-         Zoomshape.Visible := True;
-         if Y<Zoom.y then Zoomshape.Top := Y-Scrollbox1.VertScrollBar.Position;
-         if X<Zoom.x then Zoomshape.Left := X-Scrollbox1.HorzScrollBar.Position;
-         GetCursorPos(Curpos);
-         Curpos := Scrollbox1.Screentoclient(Curpos);
-         if Curpos.y<1 then
-          begin
-           Curpos.y := 1;
-           Curpos2 := Scrollbox1.Clienttoscreen(Curpos);
-           SetCursorPos(Curpos2.x,Curpos2.y);
-           Scrollbox1.VertScrollbar.Position := Scrollbox1.VertScrollbar.Position-1;
-          end else
-         if Curpos.x<1 then
-          begin
-           Curpos.X := 1;
-           Curpos2 := Scrollbox1.Clienttoscreen(Curpos);
-           SetCursorPos(Curpos2.x,Curpos2.y);
-           Scrollbox1.HorzScrollbar.Position := Scrollbox1.HorzScrollbar.Position-1;
-          end else
-         if Curpos.x>Scrollbox1.Width-16 then
-          begin
-           Curpos.X := Scrollbox1.Width-16;
-           Curpos2 := Scrollbox1.Clienttoscreen(Curpos);
-           SetCursorPos(Curpos2.x,Curpos2.y);
-           Scrollbox1.HorzScrollbar.Position := Scrollbox1.HorzScrollbar.Position+1;
-          end else
-         if Curpos.y>Scrollbox1.Height-16 then
-          begin
-           Curpos.y := Scrollbox1.Height-16;
-           Curpos2 := Scrollbox1.Clienttoscreen(Curpos);
-           SetCursorPos(Curpos2.x,Curpos2.y);
-           Scrollbox1.VertScrollbar.Position := Scrollbox1.VertScrollbar.Position+1;
+    if ssLeft in Shift then begin
+      if (Abra.Cursor = crZoomin) or (Abra.Cursor = crCrop) then begin
+        if Rajzol then begin
+          Zoomshape.Width := Abs(X - Zoom.x);
+          Zoomshape.Height := Abs(Y - Zoom.y);
+          Zoomshape.Visible := True;
+
+          if Y < Zoom.y then
+            Zoomshape.Top := Y - ScrollBox1.VertScrollBar.Position;
+          if X < Zoom.x then
+            Zoomshape.Left := X - ScrollBox1.HorzScrollBar.Position;
+
+          GetCursorPos(Curpos);
+          Curpos := ScrollBox1.ScreenToClient(Curpos);
+
+          if Curpos.y < 1 then begin
+            Curpos.y := 1;
+            Curpos2 := ScrollBox1.ClientToScreen(Curpos);
+            SetCursorPos(Curpos2.x, Curpos2.y);
+            ScrollBox1.VertScrollbar.Position := ScrollBox1.VertScrollbar.Position - 1;
+          end else if Curpos.x < 1 then begin
+            Curpos.X := 1;
+            Curpos2 := ScrollBox1.ClientToScreen(Curpos);
+            SetCursorPos(Curpos2.x, Curpos2.y);
+            ScrollBox1.HorzScrollbar.Position := ScrollBox1.HorzScrollbar.Position - 1;
+          end else if Curpos.x > ScrollBox1.Width - 16 then begin
+            Curpos.X := ScrollBox1.Width - 16;
+            Curpos2 := ScrollBox1.ClientToScreen(Curpos);
+            SetCursorPos(Curpos2.x, Curpos2.y);
+            ScrollBox1.HorzScrollbar.Position := ScrollBox1.HorzScrollbar.Position + 1;
+          end else if Curpos.y>ScrollBox1.Height-16 then begin
+            Curpos.y := ScrollBox1.Height - 16;
+            Curpos2 := ScrollBox1.ClientToScreen(Curpos);
+            SetCursorPos(Curpos2.x, Curpos2.y);
+            ScrollBox1.VertScrollbar.Position := ScrollBox1.VertScrollbar.Position + 1;
           end;
         end;
-     end
-    else
-     begin
-      if Abra.Cursor=crMove then
-      begin
-         Abra.Canvas.Pen.Mode := pmNotXor;
-         Abra.Canvas.Moveto(Zoom.x,Zoom.y);
-         Abra.Canvas.Lineto(veg.x,veg.y);
-         Abra.Canvas.Moveto(Zoom.x,Zoom.y);
-         veg.x := hakisx(X);
-         veg.y := hakisy(y);
-         Abra.Canvas.Lineto(veg.x,veg.y);
-      end
-      else
-       If Rajzol then
-       begin
-        if ssShift in Shift then
-        begin
-         m.x := hakisx(X);
-         m.y := hakisy(Y);
-         if Abra.Cursor<>crRadir then SetCursor(Screen.Cursors[crRadir]);
-         Abra.Canvas.Moveto(m.x,m.y);
-         for o := 0 to 14 do
-         for i := 0 to 14 do
-         if Abra.Canvas.Pixels[m.x+i-7,m.y+o-7]=clNavy
-         then if OptionsForm.Lapmilyen.Itemindex=0
-              then Abra.Canvas.Pixels[m.x+i-7,m.y+o-7] := clWhite
-              else
-               if (valox(m.x+i-7)<Lx/2) and (valox(m.x+i-7)>-Lx/2)
-                and (valoy(m.y+o-7)<Ly/2) and (valoy(m.y+o-7)>-Ly/2)
-               then Abra.Canvas.Pixels[m.x+i-7,m.y+o-7] := clLtGray
-               else Abra.Canvas.Pixels[m.x+i-7,m.y+o-7] := clWhite;
-        end
-        else
-        begin
-         if Abra.Cursor<>crCeruza then SetCursor(Screen.Cursors[crCeruza]);
-         Abra.Canvas.Pen.Width := 1;
-         Abra.Canvas.Pen.Color := clNavy;
-         if Egyenes then
-          begin
-           Abra.Canvas.Pen.Mode := pmNotXor;
-           Abra.Canvas.Moveto(Zoom.x,Zoom.y);
-           Abra.Canvas.Lineto(veg.x,veg.y);
-           Abra.Canvas.Moveto(Zoom.x,Zoom.y);
+      end else begin
+        if Abra.Cursor = crMove then begin
+          Abra.Canvas.Pen.Mode := pmNotXor;
+
+          Abra.Canvas.Moveto(Zoom.x,Zoom.y);
+          Abra.Canvas.Lineto(veg.x,veg.y);
+
+          veg.x := KisXKorr(X);
+          veg.y := KisYKorr(y);
+
+          Abra.Canvas.Moveto(Zoom.x,Zoom.y);
+          Abra.Canvas.Lineto(veg.x, veg.y);
+        end else if Rajzol then begin
+          if ssShift in Shift then begin
+            // Radírozás
+            m.x := KisXKorr(X);
+            m.y := KisYKorr(Y);
+
+            if Abra.Cursor <> crRadir then
+              SetCursor(Screen.Cursors[crRadir]);
+
+            Abra.Canvas.Moveto(m.x, m.y);
+            for o := 0 to 14 do begin
+              for i := 0 to 14 do begin
+                if Abra.Canvas.Pixels[m.x + i - 7, m.y + o - 7] = clNavy then
+                  if OptionsForm.Lapmilyen.Itemindex = 0 then
+                    Abra.Canvas.Pixels[m.x + i - 7, m.y + o - 7] := clWhite
+                  else if (ValosX(m.x + i - 7) < Lx / 2) and (ValosX(m.x + i - 7) > -Lx / 2)
+                  and (ValosY(m.y + o - 7) < Ly / 2) and (ValosY(m.y + o - 7) > -Ly / 2) then
+                    Abra.Canvas.Pixels[m.x+i-7,m.y+o-7] := clLtGray
+                  else
+                    Abra.Canvas.Pixels[m.x+i-7,m.y+o-7] := clWhite;
+              end
+            end
+          end else begin
+            // Rajzolás a canvasra
+            if Abra.Cursor <> crCeruza then
+              SetCursor(Screen.Cursors[crCeruza]);
+
+            Abra.Canvas.Pen.Width := 1;
+            Abra.Canvas.Pen.Color := clNavy;
+            if Egyenes then begin
+              Abra.Canvas.Pen.Mode := pmNotXor;
+
+              Abra.Canvas.Moveto(Zoom.x,Zoom.y);
+              Abra.Canvas.Lineto(veg.x,veg.y);
+
+              Abra.Canvas.Moveto(Zoom.x,Zoom.y);
+            end;
+            veg.x := KisXKorr(X);
+            veg.y := KisYKorr(Y);
+            Abra.Canvas.Lineto(KisXKorr(x),KisYKorr(y));
           end;
-         veg.x := hakisx(X);
-         veg.y := hakisy(Y);
-         Abra.Canvas.Lineto(hakisx(x),hakisy(y));
         end;
-       end;
-     end;
-   end;
-    if Elso=False then
-     begin
-      StatusBar2.Panels[0].Text := 'x: '+
-       inttostr(trunc(Atszamit(3,Eta,-lapmovex+valox(hakisx(X)))))+' '+SI[Eta];
-      StatusBar2.Panels[1].Text := 'y: '+
-       inttostr(trunc(Atszamit(3,Eta,-lapmovey+valoy(hakisy(Y)))))+' '+SI[Eta];
-     end;
+      end;
+    end;
+
+    if not Elso then begin
+      StatusBar2.Panels[0].Text := 'x: '+ IntToStr(Trunc(Atszamit(INCHUNIT, Eta, -lapmovex + ValosX(KisXKorr(X))))) + ' ' + SI[Eta];
+      StatusBar2.Panels[1].Text := 'y: '+ IntToStr(Trunc(Atszamit(INCHUNIT, Eta, -lapmovey + ValosY(KisYKorr(Y))))) + ' ' + SI[Eta];
+    end;
   end;
 
-  procedure TMainForm.AbraMouseUp(Sender: TObject; Button: TMouseButton;
-    Shift: TShiftState; X, Y: Integer);
+  procedure TMainForm.AbraMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
   var Meminfo: TMemoryStatus;
       Maxbmp: Integer;
   begin
-   if Button=mbLeft then begin
-    Rajzol  :=  False;
-    if Egyenes then
-     begin
-        Abra.Canvas.Moveto(Zoom.x,Zoom.y);
-        Abra.Canvas.Lineto(veg.x,veg.y);
+    if Button = mbLeft then begin
+      Rajzol := False;
+      if Egyenes then begin
+        Abra.Canvas.Moveto(Zoom.x, Zoom.y);
+        Abra.Canvas.Lineto(veg.x, veg.y);
+
         Abra.Canvas.Pen.Mode := pmCopy;
-        Abra.Canvas.Moveto(Zoom.x,Zoom.y);
-        Abra.Canvas.Lineto(X,Y);
-     end;
-    Egyenes := False;
-    if (Abra.Cursor=crZoomin) or (Abra.Cursor=crCrop) then
-     begin
-      Zoomshape.Visible := False;
-      NagyitBtn.Down := False;
-     if (Zoomshape.Width>50) or (Zoomshape.Height>50) or (Crop=True)
-     then
-     begin
-      if Abra.Cursor=crZoomin then
-      begin
-       if Scrollbox1.Width/Zoomshape.Width<Scrollbox1.Height/Zoomshape.Height
-        then Etna := Trunc(Etna*Scrollbox1.Width/Zoomshape.Width)
-        else Etna := Trunc(Etna*Scrollbox1.Height/Zoomshape.Height);
-       Meminfo.dwLength := Sizeof(Meminfo);
-       GlobalMemoryStatus(Meminfo);
-       Maxbmp := trunc(0.3*(Bitmap.Width*Bitmap.Height+
-         2*(MemInfo.dwAvailPhys+MemInfo.dwAvailPageFile)));
-       if sqr(Etna/Etna2)*Bitmap.Width*Bitmap.Height>Maxbmp then
-       Etna := trunc(Etna2*sqrt(Maxbmp/Bitmap.Width/Bitmap.Height));
-       if Etna/Etna2*Bitmap.Width>5000 then Etna := trunc(Etna2*5000/Bitmap.Width);
-       Zoomol := True;
-       Lupe := True;
+        Abra.Canvas.Moveto(Zoom.x, Zoom.y);
+        Abra.Canvas.Lineto(X, Y);
       end;
-      if Bitmap.Width>Scrollbox1.Width-5 then
-       Zoom.x := ScrollBox1.HorzScrollBar.Position+
-        Zoomshape.Left+Trunc(Zoomshape.Width/2)
-      else Zoom.x := Zoomshape.Left+Trunc(Zoomshape.Width/2)-
-        trunc((Scrollbox1.Width-Bitmap.Width)/2);
-      if Bitmap.Height>Scrollbox1.Height-5 then
-      Zoom.y := ScrollBox1.VertScrollBar.Position+
-        Zoomshape.Top+Trunc(Zoomshape.Height/2)
-      else Zoom.y := Zoomshape.Top+Trunc(Zoomshape.Height/2)-
-        trunc((Scrollbox1.Height-Bitmap.Height)/2);
-      if Abra.Cursor=CrCrop then
-      begin
-       Crop := True;
-       origomas := False;
-       Teljes.Enabled := True;
-       TeljesBtn.Enabled := True;
-       CropScrollHorz := ScrollBox1.HorzScrollBar.Position;
-       CropScrollVert := ScrollBox1.VertScrollBar.Position;
-       Baltop := valox(Zoom.x-Zoomshape.Width div 2)+omovex;
-       Jobbtop := valox(Zoom.x+Zoomshape.Width div 2)+omovex;
-       Lenntop := valoy(Zoom.y+Zoomshape.Height div 2)+omovey;
-       Fenntop := valoy(Zoom.y-Zoomshape.Height div 2)+omovey;
+      Egyenes := False;
+
+      if (Abra.Cursor = crZoomin) or (Abra.Cursor = crCrop) then begin
+        Zoomshape.Visible := False;
+        NagyitBtn.Down := False;
+
+        if (Zoomshape.Width > 50) or (Zoomshape.Height > 50) or (Crop) then begin
+          if Abra.Cursor = crZoomin then begin
+            if ScrollBox1.Width / Zoomshape.Width < ScrollBox1.Height / Zoomshape.Height then
+              Etna := Trunc(Etna * ScrollBox1.Width / Zoomshape.Width)
+            else
+              Etna := Trunc(Etna * ScrollBox1.Height / Zoomshape.Height);
+
+            Meminfo.dwLength := Sizeof(Meminfo);
+            GlobalMemoryStatus(Meminfo);
+            Maxbmp := Trunc(0.3 * (Bitmap.Width * Bitmap.Height + 2 * (MemInfo.dwAvailPhys + MemInfo.dwAvailPageFile)));
+
+            if sqr(Etna / Etna2) * Bitmap.Width * Bitmap.Height > Maxbmp then
+              Etna := Trunc(Etna2 * sqrt(Maxbmp / Bitmap.Width / Bitmap.Height));
+            if Etna / Etna2 * Bitmap.Width > 5000 then
+              Etna := Trunc(Etna2 * 5000 / Bitmap.Width);
+
+            Zoomol := True;
+            Lupe := True;
+          end;
+
+          if Bitmap.Width > ScrollBox1.Width - 5 then
+            Zoom.x := ScrollBox1.HorzScrollBar.Position + Zoomshape.Left + Trunc(Zoomshape.Width / 2)
+          else
+            Zoom.x := Zoomshape.Left + Trunc(Zoomshape.Width / 2) - Trunc((ScrollBox1.Width - Bitmap.Width) / 2);
+
+          if Bitmap.Height > ScrollBox1.Height - 5 then
+            Zoom.y := ScrollBox1.VertScrollBar.Position + Zoomshape.Top + Trunc(Zoomshape.Height / 2)
+          else
+            Zoom.y := Zoomshape.Top + Trunc(Zoomshape.Height / 2) - Trunc((ScrollBox1.Height - Bitmap.Height) / 2);
+
+          if Abra.Cursor = CrCrop then begin
+            Crop := True;
+            origomas := False;
+            Teljes.Enabled := True;
+            TeljesBtn.Enabled := True;
+            CropScrollHorz := ScrollBox1.HorzScrollBar.Position;
+            CropScrollVert := ScrollBox1.VertScrollBar.Position;
+            Baltop  := ValosX(Zoom.x - Zoomshape.Width div 2) + OMoveX;
+            Jobbtop := ValosX(Zoom.x + Zoomshape.Width div 2) + OMoveX;
+            Lenntop := ValosY(Zoom.y + Zoomshape.Height div 2) + OMoveY;
+            Fenntop := ValosY(Zoom.y - Zoomshape.Height div 2) + OMoveY;
+          end;
+
+          FrissitClick(Segedshape);
+        end;
+
+        Abra.Cursor := crDefault;
+        Zoomshape.Width := 1;
+        Zoomshape.Height := 1;
+        Zoomol := False;
+        Exit;
+      end else if Abra.Cursor = crMove then begin
+        Abra.Canvas.Moveto(Zoom.x, Zoom.y);
+        Abra.Canvas.Lineto(veg.x, veg.y);
+
+        Abra.Canvas.Moveto(Zoom.x, Zoom.y);
+        Abra.Canvas.Lineto(KisXKorr(X), KisYKorr(Y));
+
+        Abra.Canvas.Moveto(KisXKorr(X) - 7, KisYKorr(Y) - 7);
+        Abra.Canvas.Lineto(KisXKorr(X) + 7, KisYKorr(Y) + 7);
+
+        Abra.Canvas.Moveto(KisXKorr(X) + 7, KisYKorr(Y) - 7);
+        Abra.Canvas.Lineto(KisXKorr(X) - 7, KisYKorr(Y) + 7);
+
+        StatusBar3.Visible := True;
+        StatusBar3.BringToFront;
+        StatusBar3.Panels[0].Text := 'A kijelölt távolság: ' +
+          Format('%-8.6g', [Atszamit(INCHUNIT, Eta, sqrt(sqr(ValosX(Zoom.X) - ValosX(X)) + sqr(ValosY(Zoom.Y) - ValosY(Y))))]) + ' ' + SI[Eta];
+
+        veg.x := KisXKorr(X);
+        veg.y := KisYKorr(Y);
+        VanMeres := True;
+      end else if Abra.Cursor in [crCeruza,crRadir] then begin
+        Abra.Cursor := crDefault;
       end;
-      FrissitClick(Segedshape);
-     end;
-     Abra.Cursor := crDefault;
-     Zoomshape.Width := 1;
-     Zoomshape.Height := 1;
-     Zoomol := False;
-     Exit;
-     end;
-    if Abra.Cursor=crMove then
-    begin
-      Abra.Canvas.Moveto(Zoom.x,Zoom.y);
-      Abra.Canvas.Lineto(veg.x,veg.y);
-      Abra.Canvas.Moveto(Zoom.x,Zoom.y);
-      Abra.Canvas.Lineto(hakisx(X),hakisy(Y));
-      Abra.Canvas.Moveto(hakisx(X)-7,hakisy(Y)-7);
-      Abra.Canvas.Lineto(hakisx(X)+7,hakisy(Y)+7);
-      Abra.Canvas.Moveto(hakisx(X)+7,hakisy(Y)-7);
-      Abra.Canvas.Lineto(hakisx(X)-7,hakisy(Y)+7);
-      StatusBar3.Visible := True;
-      StatusBar3.BringToFront;
-      StatusBar3.Panels[0].Text := 'A kijelölt távolság: '+
-       Format('%-8.6g',[Atszamit(3,Eta,sqrt(sqr(valox(Zoom.X)-valox(X))+sqr(valoy(Zoom.Y)-valoy(Y))))])
-         +' '+SI[Eta];
-      veg.x := hakisx(X);
-      veg.y := hakisy(Y);
-      Marvan := True;
     end;
-   if Abra.Cursor in [crCeruza,crRadir] then Abra.Cursor := crDefault;
-   end;
-  end;
+  end; // AbraMouseUp
 
   procedure TMainForm.FormCreate(Sender: TObject);
   var MemInfo: TMemoryStatus;
       Status: Integer;
   begin
     Alapdir := ExtractFilePath(ParamStr(0));
-    Felbontas := trunc(96 * Screen.Height / 768);
+    Felbontas := Trunc(96 * Screen.Height / 768);
 
     IniFile := TIniFile.Create(Alapdir + 'armadill.ini');
 
@@ -610,8 +634,8 @@ implementation
       3: WindowState := wsMaximized;
       end;
     end;
-    Egyseg.Itemindex := IniFile.ReadInteger('Egyseg','Egyseg',0);
-    Eta := Egyseg.Itemindex;
+    EgysegCB.Itemindex := IniFile.ReadInteger('Egyseg','Egyseg',0);
+    Eta := EgysegCB.Itemindex;
     if Felbontas<90 then WindowState := wsMaximized;
     Screen.Cursors[crZoomin] := LoadCursor(HInstance, 'Nagyito1');
     Screen.Cursors[crZoomout] := LoadCursor(HInstance, 'Nagyito2');
@@ -634,14 +658,14 @@ implementation
     Baltop := 0;
     Jobbtop := 0;
     Lupe := False;
-    Szeles.Text := '';
-    Magas.Text := '';
+    SzelesEd.Text := '';
+    MagasEd.Text := '';
     Lapszeles.Text := '';
     Lapmagas.Text := '';
-    most1.x := Left;
-    most1.y := Top;
+    FormPos1.x := Left;
+    FormPos1.y := Top;
     UjForm := TSettingsForm.Create(Application);
-    UjForm.Top := Top+24+(ClientHeight-Scrollbox1.Height);
+    UjForm.Top := Top+24+(ClientHeight-ScrollBox1.Height);
     UjForm.Left := Left+5;
 
     Lapx[0,0] := 1189;Lapy[0,0] := 841;
@@ -684,14 +708,19 @@ implementation
   end;
 
   procedure TMainForm.FrissitClick(Sender: TObject);
+  begin
+    Frissites(DRAWMODE);
+  end;
+
+  procedure TMainForm.Frissites(Mode : Byte); // 1 - ábra frissítése, 2 - nyomtatás, 3 - plotter fájlba mentés
   var Tatu, KM, margox, margoy, szorzo, progpos: Double;
-      Delta1, Delta2, Delta3, Delta4: Byte;
-      family, prog: byte;
-      rossz, Ex, segede, sfh: Boolean;
+      MerSurusegFok, ParSurusegFok, SegMerSurusegFok, SegParSurusegFok: Byte;
+      Csalad, prog: byte;
+      rossz, Ex, Ferde, sfh: Boolean;
       mike, x2, y2, x1, y1: Integer;
       Vezuv2: Integer;
       q, i, j, loopint: Integer;
-      fi, la, fc, lc, lca, lcb, fca, fcb, f0, l0 : Double;
+      Fi, La, Fc, Lc, Fca, Lca, Fcb, Lcb, F0, L0 : Double;
       valos: record
         Width: Integer;
         Height: Integer;
@@ -724,35 +753,38 @@ implementation
       if y2 > Fenntop then Fenntop := y2;
     end;
 
-    procedure Szinado(szinlista: TCombobox);
-    var szin: TColor;
+    procedure Szinado(SzinCB: TCombobox);
+    var Szin: TColor;
     begin
-      szin := clBlack;
-      case szinlista.Itemindex of
-      0: szin := clBlack;
-      1: szin := clBlue;
-      2: szin := clRed;
-      3: szin := clGreen;
-      4: szin := clPurple;
-      5: szin := clYellow;
-      6: szin := clAqua;
-      7: szin := clMaroon;
+      Szin := clBlack;
+      case SzinCB.Itemindex of
+      0: Szin := clBlack;
+      1: Szin := clBlue;
+      2: Szin := clRed;
+      3: Szin := clGreen;
+      4: Szin := clPurple;
+      5: Szin := clYellow;
+      6: Szin := clAqua;
+      7: Szin := clMaroon;
+      8: Szin := clGray;
       end;
 
-      if nyom then
-        Printer.Canvas.Pen.Color := szin
-      else if not plt then
-        Bitmap.Canvas.Pen.Color := szin
+      case Mode of
+      PRINTMODE:
+        Printer.Canvas.Pen.Color := Szin;
+      PLTMODE:
+        writeln(Filesv, 'sp', SzinCB.Itemindex + 1, ';');
       else
-        writeln(Filesv, 'sp', szinlista.Itemindex + 1, ';');
+        Bitmap.Canvas.Pen.Color := Szin
+      end;
     end;
 
-    procedure Vastagado(par: Byte);
+    procedure Vastagado(Vastagsag : Byte);
     begin
-      if nyom then
-        Printer.Canvas.Pen.Width := par
-      else if not plt then
-        Bitmap.Canvas.Pen.Width := par;
+      if Mode = PRINTMODE then
+        Printer.Canvas.Pen.Width := Vastagsag
+      else if Mode <> PLTMODE then
+        Bitmap.Canvas.Pen.Width := Vastagsag;
     end;
 
     procedure Tatuado(GB: Byte);
@@ -771,68 +803,68 @@ implementation
 
     function printerrex(par: Integer): Integer;
     begin
-      result := trunc(par * Printer.PageWidth / Lx + Printer.PageWidth / 2);
+      result := Trunc(par * Printer.PageWidth / Lx + Printer.PageWidth / 2);
     end;
 
     function printerrey(par: Integer): Integer;
     begin
-      result := trunc(Printer.PageHeight / 2 - par * Printer.PageWidth / Lx);
+      result := Trunc(Printer.PageHeight / 2 - par * Printer.PageWidth / Lx);
     end;
 
     function keprex(par: Integer): Integer;
     begin
-      result := trunc(par * Felbontas * Etna / 100000) + OrigoX;
+      result := Trunc(par * Felbontas * Etna / 100000) + OrigoX;
     end;
 
     function keprey(par: Integer): Integer;
     begin
-      result := OrigoY - trunc(par * Felbontas * Etna / 100000);
+      result := OrigoY - Trunc(par * Felbontas * Etna / 100000);
     end;
 
     procedure seged(ff, ll : Double; var fc2, lc2 : Double);
     var w : Double;
     begin
       TRY
-  {      fc2 := arcsin(sin(f0) * sin(ff) + cos(f0) * cos(ff) * cos(ll - l0));
-        if abs(cos(f0)) < 1.0e-8 then begin
-          if Almost(f0, pi / 2) then begin
-            lc2 := ll - l0;
+        fc2 := arcsin(sin(F0) * sin(ff) + cos(F0) * cos(ff) * cos(ll - L0));
+        if abs(cos(F0)) < 1.0e-8 then begin
+          if Almost(F0, Pi / 2) then begin
+            lc2 := ll - L0;
             fc2 := ff;
-            if lc2 < -pi then
-              lc2 := lc2 + 2 * pi * (trunc(-180 / pi * lc2 + 180) div 360);
-            if lc2 > pi then
-              lc2 := lc2 - 2 * pi * (trunc(180/ pi * lc2 + 180) div 360);
+            if lc2 < -Pi then
+              lc2 := lc2 + 2 * Pi * (Trunc(-180 / Pi * lc2 + 180) div 360);
+            if lc2 > Pi then
+              lc2 := lc2 - 2 * Pi * (Trunc(180/ Pi * lc2 + 180) div 360);
           end else begin
-            lc2 := -ll + l0;
+            lc2 := -ll + L0;
             fc2 := -ff;
-            if lc2 < -pi then lc2 := lc2 + 2 * pi * (trunc(-180 / pi * lc2 + 180) div 360);
-            if lc2 > pi then lc2 := lc2 - 2 * pi * (trunc(180 / pi * lc2 + 180) div 360);
+            if lc2 < -Pi then lc2 := lc2 + 2 * Pi * (Trunc(-180 / Pi * lc2 + 180) div 360);
+            if lc2 > Pi then lc2 := lc2 - 2 * Pi * (Trunc(180 / Pi * lc2 + 180) div 360);
           end
         end else begin
           if abs(cos(fc2)) < 1.0e-8 then
-            lc2 := l0
-          else if abs(sin(ll - l0)) < 1.0e-8 then begin
-            if ((ff < f0) and (ll = l0)) or ((ff <= -f0) and (abs(ll - l0) = pi)) then begin
+            lc2 := L0
+          else if abs(sin(ll - L0)) < 1.0e-8 then begin
+            if ((ff < F0) and (ll = L0)) or ((ff <= -F0) and (abs(ll - L0) = Pi)) then begin
               if north then
-                lc2 := (ll + 0.00001) / abs(ll + 0.00001) * pi
+                lc2 := (ll + 0.00001) / abs(ll + 0.00001) * Pi
               else
                 lc2 := 0
             end else if north then
               lc2 := 0
-            else lc2 := (ll + 0.00001) / abs(ll + 0.00001) * pi;
+            else lc2 := (ll + 0.00001) / abs(ll + 0.00001) * Pi;
           end else begin
-            w := cos(f0) * cos(fc2);
-            if abs((sin(ff) - sin(f0) * sin(fc2)) / w) > 1 then begin
-              lc2 := pi / 4;
+            w := cos(F0) * cos(fc2);
+            if abs((sin(ff) - sin(F0) * sin(fc2)) / w) > 1 then begin
+              lc2 := Pi / 4;
             end else begin
-              lc2 := arccos((sin(ff) - sin(f0) * sin(fc2)) / w);
-              lc2 := -(sin(ll - l0) / abs(sin(ll - l0))) * abs(lc2);
+              lc2 := arccos((sin(ff) - sin(F0) * sin(fc2)) / w);
+              lc2 := -(sin(ll - L0) / abs(sin(ll - L0))) * abs(lc2);
             end;
             if not north then
-              lc2 := -lc2 / abs(lc2) * (pi - abs(lc2));
+              lc2 := -lc2 / abs(lc2) * (Pi - abs(lc2));
           end;
         end;
-  }    EXCEPT
+      EXCEPT
         ON EInvalidOp DO BEGIN
           lc2 := 1;
           fc2 := 1;
@@ -842,69 +874,73 @@ implementation
 
     procedure mozgat(x, y: Integer);
     begin
-      if Nyom then
-        Printer.Canvas.Moveto(printerrex(x - omovex), printerrey(y - omovey))
-      else if not plt then
-        Bitmap.Canvas.Moveto(keprex(x - komovex),keprey(y - komovey))
+      case Mode of
+      PRINTMODE :
+        Printer.Canvas.Moveto(printerrex(x - OMoveX), printerrey(y - OMoveY));
+      PLTMODE :
+        writeln(Filesv, 'pu ', x - OMoveX, ' ', y - OMoveY, ';');
       else
-        writeln(Filesv, 'pu ', x - omovex, ' ', y - omovey, ';');
+        Bitmap.Canvas.Moveto(keprex(x - KoMoveX),keprey(y - KoMoveY))
+      end;
     end;
 
     procedure ir(x, y : Integer);
     begin
-      if Nyom then
-        Printer.Canvas.Lineto(printerrex(x - omovex), printerrey(y - omovey))
-      else if not plt then
-        Bitmap.Canvas.Lineto(keprex(x - komovex), keprey(y - komovey))
+      case Mode of
+      PRINTMODE :
+        Printer.Canvas.Lineto(printerrex(x - OMoveX), printerrey(y - OMoveY));
+      PLTMODE :
+        writeln(Filesv, 'pd ', x - OMoveX, ' ', y - OMoveY, ';');
       else
-        writeln(Filesv, 'pd ', x - omovex, ' ', y - omovey, ';');
+        Bitmap.Canvas.Lineto(keprex(x - KoMoveX), keprey(y - KoMoveY));
+      end;
     end;
 
-    procedure psziszamito(var pszi : Double);
-    var xa, xb, b, d: Double;
+    procedure psziszamito(var Pszi : Double);
+    var Xa, Xb, B, D: Double;
 
-      function fv(j : Double) : Double;
+      function Fv(J : Double) : Double;
       begin
-        case aktiv of
+        case AktivVetulet of
         64 : // Területtartó polikónikus
-          fv := j - sin(j) * sqr(cos(fc)) - lc * sin(fc) * sqr(sin(fc));
+          Fv := J - Sin(j) * Sqr(Cos(Fc)) - Lc * Sin(Fc) * Sqr(Sin(Fc));
         83 : // Eckert VI.
-          fv := 0.777969059 * (j + sin(j)) - 2 * sin(fc);
+          Fv := 0.777969059 * (J + Sin(j)) - 2 * Sin(Fc);
         85, 89, 90 : // Mollweide-féle, Érdi-Krausz-féle, Goode-féle vetület
-          fv := 2 * j + sin(2 * j) - pi * sin(fc);
+          Fv := 2 * J + Sin(2 * J) - Pi * Sin(Fc);
         87 : // Eckert IV.
-          fv := 4 * sin(j) + sin(2 * j) + 2 * j - (4 + pi) * sin(fc);
+          Fv := 4 * Sin(J) + Sin(2 * J) + 2 * J - (4 + Pi) * Sin(Fc);
         end;
       end;
 
     begin // psziszamito
-  {    xa := 1;
-      xb := 0;
+      Xa := 1;
+      Xb := 0;
 
       repeat
-        b := 10;
-        d := 10;
+        B := 10;
+        D := 10;
 
-        while fv(xa) = fv(xb) do begin
-          d := d / 10;
-          b := b * 10;
-          n := 1;
+        while Fv(Xa) = Fv(Xb) do begin
+          D := D / 10;
+          B := B * 10;
+          N := 1;
 
           repeat
-            xb := xb + d;
-            n := n + 1;
-          until (fv(xb) <> fv(xb)) or (n > b);
+            Xb := Xb + D;
+            N := N + 1;
+          until (Fv(Xb) <> Fv(Xb)) or (N > B);
         end;
 
-        pszi := (fv(xa) * xb - fv(xb) * xa) / (fv(xa) - fv(xb));
-        xa := xb;
-        xb := pszi;
-      until (abs(xb - xa) < 1.0e-9) or (fv(pszi) = 0);
-  }  end; // procedure psziszamito
+        Pszi := (Fv(Xa) * Xb - Fv(Xb) * Xa) / (Fv(Xa) - Fv(Xb));
+        Xa := Xb;
+        Xb := Pszi;
+      until (Abs(Xb - Xa) < 1.0e-9) or (Fv(Pszi) = 0);
+    end; // procedure psziszamito
 
     procedure inicializalo;
     begin
-  {    case aktiv of
+      case AktivVetulet of
       20 : // Ptolemaiosz-féle
         begin
           betan := Arcus(fin);
@@ -955,13 +991,13 @@ implementation
           beta2 := Arcus(fi2);
           if fi1 = 0 then begin
             ce := 1;
-            betan := pi / 2 - beta2 / 2;
+            betan := Pi / 2 - beta2 / 2;
           end else if fi2 = 0 then begin
             ce := 1;
-            betan := pi / 2 - beta1 / 2;
+            betan := Pi / 2 - beta1 / 2;
           end else if fi1 = fi2 then begin
             ce := 1 / cos(beta1);
-            betan := pi / 2 - beta1;
+            betan := Pi / 2 - beta1;
           end else begin
             ce := (sin(beta2) * cos(beta1) - sin(beta1) * cos(beta2)) / (sin(beta2) - sin(beta1));
             betan := arctan(sin(beta1) / (ce - cos(beta1)));
@@ -971,42 +1007,42 @@ implementation
 
     41,43,45,46: betan := arcus(fin);
     60:ce := arcus(fin)+cotan(arcus(fin));
-    61:ce := pi/2;
+    61:ce := Pi/2;
     69:begin
         ce := fia;
         betan := -arcus(fik);
        end;
     107: betan := arcus(fin);
     end;
-    if aktiv in [27,46] then
+    if AktivVetulet in [27,46] then
       if ParametersForm1.Iranybox.Itemindex=0 then beta0 := fia else beta0 := -fia;
-  } end;
+   end;
 
    procedure vetites(var aX,aY:integer);
    var p, beta, bX, bY, pszi, aa, bb, cc, gg, pp, qq, ss, tt: Double;
    begin
-    if segede=False then
+    if Ferde=False then
      begin
-       lc := lc-KM;
-       if lc<-pi then lc := lc+2*pi*(trunc(-180/pi*lc+180) div 360);
-       if lc>pi then lc := lc-2*pi*(trunc(180/pi*lc+180) div 360);
+       Lc := Lc-KM;
+       if Lc<-Pi then Lc := Lc+2*Pi*(Trunc(-180/Pi*Lc+180) div 360);
+       if Lc>Pi then Lc := Lc-2*Pi*(Trunc(180/Pi*Lc+180) div 360);
      end;
-    beta := pi/2-fc;
+    beta := Pi/2-Fc;
     p := beta;
-    case family of
+    case Csalad of
     0:begin
-       case aktiv of
+       case AktivVetulet of
        0: p := beta;
        1: p := 2*sin(beta/2);
        2: p := 2*tan(beta/2);
        3: p := tan(beta);
        4: p := sin(beta);
        end;
-        aX := trunc(p*sin(lc)*Fold/1000/Vezuv);
-        aY := -trunc(p*cos(lc)*Fold/1000/Vezuv);
+        aX := Trunc(p*sin(Lc)*Fold/1000/Vezuv);
+        aY := -Trunc(p*cos(Lc)*Fold/1000/Vezuv);
       end;
     1:begin
-       case aktiv of
+       case AktivVetulet of
        20: p := tan(betan)+beta-betan;
        21: p := tan(beta0)/tan(beta1-beta0)*(beta1-beta0)+beta-beta0;
        22,23: p := ce*exp(n*ln(tan(beta/2)));
@@ -1017,532 +1053,532 @@ implementation
            else p := (ce+beta0)*sin(beta)/(beta0*sin(betan)+sin(betan+beta));
           end;
        end;
-       aX := trunc(p*sin(n*lc)*Fold/1000/Vezuv);
-       aY := -trunc(p*cos(n*lc)*Fold/1000/Vezuv);
+       aX := Trunc(p*sin(n*Lc)*Fold/1000/Vezuv);
+       aY := -Trunc(p*cos(n*Lc)*Fold/1000/Vezuv);
       end;
     2:begin
-       case aktiv of
+       case AktivVetulet of
        40: begin
-            bX := lc;
-            bY := fc;
+            bX := Lc;
+            bY := Fc;
            end;
        41: begin
-            bX := lc*cos(betan);
-            bY := fc;
+            bX := Lc*cos(betan);
+            bY := Fc;
            end;
        42: begin
-            bX := lc;
-            bY := sin(fc);
+            bX := Lc;
+            bY := sin(Fc);
            end;
        43: begin
-            bX := lc*cos(betan);
-            bY := sin(fc)/cos(betan);
+            bX := Lc*cos(betan);
+            bY := sin(Fc)/cos(betan);
            end;
        44: begin
-            bX := lc;
-            bY := ln(tan(fc/2+pi/4));
+            bX := Lc;
+            bY := ln(tan(Fc/2+Pi/4));
            end;
        45: begin
-            bX := lc*cos(betan);
-            bY := cos(betan)*ln(tan(fc/2+pi/4));
+            bX := Lc*cos(betan);
+            bY := cos(betan)*ln(tan(Fc/2+Pi/4));
            end;
        46: begin
-            bX := lc*cos(betan);
-            bY := (beta0*cos(betan)*(1-cos(fc))+sin(fc)*cos(betan))/cos(fc);
+            bX := Lc*cos(betan);
+            bY := (beta0*cos(betan)*(1-cos(Fc))+sin(Fc)*cos(betan))/cos(Fc);
            end;
        end;
-       aX := trunc(bX*Fold/1000/Vezuv);
-       aY := trunc(bY*Fold/1000/Vezuv);
+       aX := Trunc(bX*Fold/1000/Vezuv);
+       aY := Trunc(bY*Fold/1000/Vezuv);
       end;
     3:begin
-       case aktiv of
+       case AktivVetulet of
        60:begin
-           p := ce-fc;
-           n := cos(fc)/p*lc;
+           p := ce-Fc;
+           n := cos(Fc)/p*Lc;
            bX := p*sin(n);
            bY := ce-p*cos(n);
           end;
        61:begin
-           p := ce-fc;
-           if p<0.001 then n := 0 else n := cos(fc)/p*lc;
+           p := ce-Fc;
+           if p<0.001 then n := 0 else n := cos(Fc)/p*Lc;
            bX := p*sin(n);
            bY := ce-p*cos(n);
           end;
        62:begin
-           if fc=0 then
+           if Fc=0 then
             begin
-             bX := lc;
+             bX := Lc;
              bY := 0
             end
            else
             begin
-             p := cotan(fc);
-             n := lc*sin(fc);
-             bX := sin(n)*cotan(fc);
-             bY := fia*fc+(1-cos(n))*cotan(fc);
+             p := cotan(Fc);
+             n := Lc*sin(Fc);
+             bX := sin(n)*cotan(Fc);
+             bY := fia*Fc+(1-cos(n))*cotan(Fc);
             end;
           end;
        63:begin
-           if fc=0 then
+           if Fc=0 then
             begin
-             bX := lc;
+             bX := Lc;
              bY := 0;
             end
            else
             begin
-             n := 2*arctan(lc/2*sin(fc));
-             p := cotan(fc);
+             n := 2*arctan(Lc/2*sin(Fc));
+             p := cotan(Fc);
              bX := sin(n)*p;
-             bY := fia*fc+(1-cos(n))*p;
+             bY := fia*Fc+(1-cos(n))*p;
             end;
           end;
        64:begin
-           qq := fc;
-           if abs(fc)<0.02 then fc := 0.001;
+           qq := Fc;
+           if abs(Fc)<0.02 then Fc := 0.001;
            psziszamito(n);
-           p := cotan(fc);
+           p := cotan(Fc);
            bX := sin(n)*p;
-           bY := fia*fc+(1-cos(n))*p;
-           fc := qq;
+           bY := fia*Fc+(1-cos(n))*p;
+           Fc := qq;
           end;
        65:begin
-           if fc=0 then
+           if Fc=0 then
             begin
-             bX := 2*tan(lc/2);
+             bX := 2*tan(Lc/2);
              bY := 0;
             end
            else
             begin
-             n := 2*arctan(tan(fc/2)*tan(lc/2));
-             p := cotan(fc);
+             n := 2*arctan(tan(Fc/2)*tan(Lc/2));
+             p := cotan(Fc);
              bX := sin(n)*p;
-             bY := 1/sin(fc)-p*cos(n);
+             bY := 1/sin(Fc)-p*cos(n);
             end;
           end;
        66:begin
-           bb := abs(2*fc/pi);
+           bb := abs(2*Fc/Pi);
            cc := sqrt(1-sqr(bb));
-           if abs(fc)<0.001 then
+           if abs(Fc)<0.001 then
             begin
-             bX := lc;
+             bX := Lc;
              bY := 0;
             end
            else
-           if abs(lc)<0.001 then
+           if abs(Lc)<0.001 then
             begin
              bX := 0;
-             bY := sgn(fc)*pi*bb/(1+cc);
+             bY := sgn(Fc)*Pi*bb/(1+cc);
             end
            else
-           if pi/2-abs(fc)<0.001 then
+           if Pi/2-abs(Fc)<0.001 then
             begin
              bX := 0;
-             bY := sgn(fc)*pi;
+             bY := sgn(Fc)*Pi;
             end
            else
             begin
-             aa := abs(pi/lc-lc/pi)/2;
+             aa := abs(Pi/Lc-Lc/Pi)/2;
              gg := cc/(bb+cc-1);
              pp := gg*(2/bb-1);
              qq := sqr(aa)+gg;
              ss := sqr(pp)+sqr(aa);
              tt := gg-sqr(pp);
-             bX := sgn(lc)*pi*(aa*tt+sqrt(sqr(aa*tt)-ss*(sqr(gg)-sqr(pp))))/ss;
-             bY := sgn(fc)*pi*(pp*qq-aa*sqrt(ss*(sqr(aa)+1)-sqr(qq)))/ss;
+             bX := sgn(Lc)*Pi*(aa*tt+sqrt(sqr(aa*tt)-ss*(sqr(gg)-sqr(pp))))/ss;
+             bY := sgn(Fc)*Pi*(pp*qq-aa*sqrt(ss*(sqr(aa)+1)-sqr(qq)))/ss;
             end;
           end;
        67:begin
-           bb := abs(2*fc/pi);
+           bb := abs(2*Fc/Pi);
            cc := sqrt(1-sqr(bb));
-           if abs(lc)<0.001 then
+           if abs(Lc)<0.001 then
             begin
              bX := 0;
-             bY := sgn(fc)*pi*bb/(1+cc);
+             bY := sgn(Fc)*Pi*bb/(1+cc);
             end
            else
             begin
-             aa := abs(pi/lc-lc/pi)/2;
+             aa := abs(Pi/Lc-Lc/Pi)/2;
              gg := (cc*sqrt(1+sqr(aa))-aa*sqr(cc))/(1+sqr(aa*bb));
-             bX := sgn(lc)*pi*gg;
-             bY := sgn(fc)*pi*sqrt(1-sqr(gg)-2*aa*gg);
+             bX := sgn(Lc)*Pi*gg;
+             bY := sgn(Fc)*Pi*sqrt(1-sqr(gg)-2*aa*gg);
             end;
           end;
        68:begin
-             if abs(fc)<0.001 then
+             if abs(Fc)<0.001 then
               begin
-               bX := lc;
+               bX := Lc;
                bY := 0;
               end
              else
-             if (abs(lc)<0.001) or (pi/2-abs(fc)<0.001) then
+             if (abs(Lc)<0.001) or (Pi/2-abs(Fc)<0.001) then
               begin
                bX := 0;
-               bY := fc;
+               bY := Fc;
               end
              else
               begin
-               bb := abs(2*fc/pi);
+               bb := abs(2*Fc/Pi);
                cc := (8*bb-sqr(sqr(bb))-2*sqr(bb)-5)/(2*sqr(bb)*bb-2*sqr(bb));
-               gg := sgn(abs(lc)-pi/2)*sqrt(sqr(2*lc/pi+pi/2/lc)-4);
+               gg := sgn(abs(Lc)-Pi/2)*sqrt(sqr(2*Lc/Pi+Pi/2/Lc)-4);
                pp := sqr(bb+cc)*(sqr(bb)+sqr(cc*gg)-1)+(1-sqr(bb))*(sqr(bb)*
                  (sqr(bb+3*cc)+4*sqr(cc))+12*bb*sqr(cc)*cc+4*sqr(sqr(cc)));
                qq := (gg*(sqr(bb+cc)+sqr(cc)-1)+2*sqrt(pp))/(4*(sqr(bb+cc))+sqr(gg));
-               bX := sgn(lc)*pi*qq/2;
-               bY := sgn(fc)*pi/2*sqrt(1+gg*abs(qq)-sqr(qq));
+               bX := sgn(Lc)*Pi*qq/2;
+               bY := sgn(Fc)*Pi/2*sqrt(1+gg*abs(qq)-sqr(qq));
               end;
           end;
        69:begin
-           if pi/2-abs(fc)<0.001 then
+           if Pi/2-abs(Fc)<0.001 then
             begin
              bX := 0;
-             bY := 2*sgn(fc);
+             bY := 2*sgn(Fc);
             end
            else
             begin
              aa := exp((1/2/ce)*ln((1+sin(betan))/(1-sin(betan))));
-             bb := exp((1/2/ce)*ln((1+sin(fc))/(1-sin(fc))));
+             bb := exp((1/2/ce)*ln((1+sin(Fc))/(1-sin(Fc))));
              gg := aa*bb;
-             cc := (gg+1/gg)/2+cos(lc/ce);
-             bX := 2*sin(lc/ce)/cc;
+             cc := (gg+1/gg)/2+cos(Lc/ce);
+             bX := 2*sin(Lc/ce)/cc;
              bY := (gg-1/gg)/cc;
             end;
           end;
        70:begin
-             if abs(lc)<0.001 then
+             if abs(Lc)<0.001 then
               begin
                bX := 0;
-               bY := fc;
+               bY := Fc;
               end
              else
-             if abs(fc)<0.001 then
+             if abs(Fc)<0.001 then
               begin
-               bX := lc;
+               bX := Lc;
                bY := 0;
               end
              else
-             if abs(pi/2-abs(lc))<0.001 then
+             if abs(Pi/2-abs(Lc))<0.001 then
               begin
-               bX := lc*cos(fc);
-               bY := pi/2*sin(fc);
+               bX := Lc*cos(Fc);
+               bY := Pi/2*sin(Fc);
               end
              else
               begin
                cc := 2.4674011;
-               pp := abs(pi*sin(fc));
-               ss := (cc-sqr(fc))/(pp-2*abs(fc));
-               aa := sqr(lc)/cc-1;
-               bY := sgn(fc)*(sqrt(sqr(ss)-aa*(cc-pp*ss-sqr(lc)))-ss)/aa;
-               bX := sgn(lc)*abs(lc)*sqrt(1-sqr(bY)/cc);
+               pp := abs(Pi*sin(Fc));
+               ss := (cc-sqr(Fc))/(pp-2*abs(Fc));
+               aa := sqr(Lc)/cc-1;
+               bY := sgn(Fc)*(sqrt(sqr(ss)-aa*(cc-pp*ss-sqr(Lc)))-ss)/aa;
+               bX := sgn(Lc)*abs(Lc)*sqrt(1-sqr(bY)/cc);
               end;
           end;
        end;
-       aX := trunc(bX*Fold/1000/Vezuv);
-       aY := trunc(bY*Fold/1000/Vezuv);
+       aX := Trunc(bX*Fold/1000/Vezuv);
+       aY := Trunc(bY*Fold/1000/Vezuv);
       end;
     4:begin
-       case aktiv of
+       case AktivVetulet of
        80: begin
-            bX := cos(fc)*lc;
-            bY := fc;
+            bX := cos(Fc)*Lc;
+            bY := Fc;
            end;
        81: begin
-            bX := 0.877382675*lc*sqrt(1-0.75*sqr(sin(fc)));
-            bY := 1.316074013*arcsin(0.866025404*sin(fc));
+            bX := 0.877382675*Lc*sqrt(1-0.75*sqr(sin(Fc)));
+            bY := 1.316074013*arcsin(0.866025404*sin(Fc));
            end;
        82: begin
-            bX := 0.882025543*lc*(cos(fc)+1)/2;
-            bY := 0.882025543*fc;
+            bX := 0.882025543*Lc*(cos(Fc)+1)/2;
+            bY := 0.882025543*Fc;
            end;
        83: begin
             psziszamito(pszi);
-            bX := 0.882025543*lc*(cos(pszi)+1)/2;
+            bX := 0.882025543*Lc*(cos(pszi)+1)/2;
             bY := 0.882025543*pszi;
            end;
        84: begin
-            bY := fc;
-            bX := 1-4*sqr(fc/pi);
-            if bX<=0 then bX := 0 else bX := lc*sqrt(bX);
+            bY := Fc;
+            bX := 1-4*sqr(Fc/Pi);
+            if bX<=0 then bX := 0 else bX := Lc*sqrt(bX);
            end;
        85: begin
             psziszamito(pszi);
-            bX := 0.900316316*lc*cos(pszi);
+            bX := 0.900316316*Lc*cos(pszi);
             bY := 1.414213562*sin(pszi);
            end;
        86: begin
-            bX := 1-4*sqr(fc/pi);
-            if bX<=0 then bX := lc/2 else bX := 0.4222382*lc*(1+sqrt(bX));
-            bY := 0.844476401*fc;
+            bX := 1-4*sqr(Fc/Pi);
+            if bX<=0 then bX := Lc/2 else bX := 0.4222382*Lc*(1+sqrt(bX));
+            bY := 0.844476401*Fc;
            end;
        87: begin
             psziszamito(pszi);
-            bY := 0.844476401*pi/2*sin(pszi);
-            bX := 0.4222382*lc*(1+cos(pszi));
+            bY := 0.844476401*Pi/2*sin(pszi);
+            bX := 0.4222382*Lc*(1+cos(pszi));
            end;
        88: begin
-            bY := fc;
-            bX := 0.866025404*lc*sqrt(1-0.303963551*sqr(fc));
+            bY := Fc;
+            bX := 0.866025404*Lc*sqrt(1-0.303963551*sqr(Fc));
            end;
        89: begin
-            if abs(fc)<arcus(fis) then
+            if abs(Fc)<arcus(fis) then
              begin
-              bX := 0.960415*sqrt(1-0.64*sqr(sin(fc)))*lc;
-              bY := 1.30152*arcsin(0.8*sin(fc));
+              bX := 0.960415*sqrt(1-0.64*sqr(sin(Fc)))*Lc;
+              bY := 1.30152*arcsin(0.8*sin(Fc));
              end
             else
              begin
               psziszamito(pszi);
               if fis<65 then
                begin
-                bX := 1.070223*cos(pszi)*lc;
-                bY := 1.681102*sin(pszi)-sgn(fc)*0.285475;
+                bX := 1.070223*cos(pszi)*Lc;
+                bY := 1.681102*sin(pszi)-sgn(Fc)*0.285475;
                end
               else
                begin
-                bX := 1.249039*cos(pszi)*lc;
-                bY := 1.961985*sin(pszi)-sgn(fc)*0.583828;
+                bX := 1.249039*cos(pszi)*Lc;
+                bY := 1.961985*sin(pszi)-sgn(Fc)*0.583828;
                end;
              end;
            end;
        90: begin
-            if fc<=0 then
+            if Fc<=0 then
              begin
-              if lc<=arcus(-100) then aa := arcus(-160);
-              if (lc>arcus(-100)) and (lc<=arcus(-20)) then aa := arcus(-60);
-              if (lc>arcus(-20)) and (lc<=arcus(80)) then aa := arcus(30);
-              if lc>arcus(80) then aa := arcus(140);
+              if Lc<=arcus(-100) then aa := arcus(-160);
+              if (Lc>arcus(-100)) and (Lc<=arcus(-20)) then aa := arcus(-60);
+              if (Lc>arcus(-20)) and (Lc<=arcus(80)) then aa := arcus(30);
+              if Lc>arcus(80) then aa := arcus(140);
              end
             else
              begin
-              if lc<=arcus(-40) then aa := arcus(-100)
+              if Lc<=arcus(-40) then aa := arcus(-100)
               else aa := arcus(30);
              end;
-            if abs(fc)<=arcus(40.7333) then
+            if abs(Fc)<=arcus(40.7333) then
              begin
-              bX := cos(fc)*(lc-aa)+aa;
-              bY := fc;
+              bX := cos(Fc)*(Lc-aa)+aa;
+              bY := Fc;
              end
             else
              begin
               psziszamito(pszi);
-              bX := 0.900316316*(lc-aa)*cos(pszi)+aa;
-              bY := 1.414213562*sin(pszi)-sgn(fc)*0.05280;
+              bX := 0.900316316*(Lc-aa)*cos(pszi)+aa;
+              bY := 1.414213562*sin(pszi)-sgn(Fc)*0.05280;
              end;
            end;
        91: begin
-            bY := sgn(fc)*(0.95*abs(fc)+0.9/pi*sqr(fc));
-            if abs(fc)<1.221730476 then
+            bY := sgn(Fc)*(0.95*abs(Fc)+0.9/Pi*sqr(Fc));
+            if abs(Fc)<1.221730476 then
              begin
                pszi := arcsin(bY/1.84466);
-               bX := lc/pi*(pi-1.84466+1.84466*cos(pszi));
+               bX := Lc/Pi*(Pi-1.84466+1.84466*cos(pszi));
              end
             else
              begin
-               pszi := arccos((4.39461-(0.7*pi-abs(bY)))/4.39461);
-               bX := 4.39461*sin(pszi)*lc/pi;
+               pszi := arccos((4.39461-(0.7*Pi-abs(bY)))/4.39461);
+               bX := 4.39461*sin(pszi)*Lc/Pi;
              end;
            end;
        92: begin
-            bY := 0.0273759*sqr(sqr(fc))*fc-0.107505*sqr(fc)*abs(fc)*fc+
-              0.112579*sqr(fc)*fc+fc;
-            if abs(fc)<=1.362578547
+            bY := 0.0273759*sqr(sqr(Fc))*Fc-0.107505*sqr(Fc)*abs(Fc)*Fc+
+              0.112579*sqr(Fc)*Fc+Fc;
+            if abs(Fc)<=1.362578547
             then bX := (1.22172+sqrt(2.115393-sqr(bY)))*
-              ln(0.11679*abs(lc)+1)/0.31255*sgn(lc)
+              ln(0.11679*abs(Lc)+1)/0.31255*sgn(Lc)
             else bX := sqrt(38.4308-sqr(4.58448+abs(bY)))*
-              ln(0.11679*abs(lc)+1)/0.31255*sgn(lc);
+              ln(0.11679*abs(Lc)+1)/0.31255*sgn(Lc);
            end;
        93: begin
-            bX := (2.6666-0.3670*sqr(fc)-0.15*sqr(sqr(fc))+
-              0.0379*sqr(sqr(fc))*sqr(fc))*lc/pi;
-            bY := 0.96047*fc-0.00857*exp(6.41*ln(abs(fc)))*sgn(fc);
+            bX := (2.6666-0.3670*sqr(Fc)-0.15*sqr(sqr(Fc))+
+              0.0379*sqr(sqr(Fc))*sqr(Fc))*Lc/Pi;
+            bY := 0.96047*Fc-0.00857*exp(6.41*ln(abs(Fc)))*sgn(Fc);
            end;
        94: begin
-            bY := fc;
-            if (lc=0) or ((abs(fc)>arcus(89.9)) and ((fel) or (abs(lc)<arcus(91)))) then bX := 0
+            bY := Fc;
+            if (Lc=0) or ((abs(Fc)>arcus(89.9)) and ((fel) or (abs(Lc)<arcus(91)))) then bX := 0
             else
              begin
-              p := (sqr(pi/2)+sqr(lc))/2/abs(lc);
-              bX := (abs(lc)-p+sqrt(sqr(p)-sqr(fc)))*sgn(lc);
+              p := (sqr(Pi/2)+sqr(Lc))/2/abs(Lc);
+              bX := (abs(Lc)-p+sqrt(sqr(p)-sqr(Fc)))*sgn(Lc);
              end;
            end;
        95: begin
-            bY := pi/2*sin(fc);
-            if (abs(lc)<0.001) or ((abs(fc)>arcus(89.9)) and ((fel) or (abs(lc)<arcus(91)))) then bX := 0
+            bY := Pi/2*sin(Fc);
+            if (abs(Lc)<0.001) or ((abs(Fc)>arcus(89.9)) and ((fel) or (abs(Lc)<arcus(91)))) then bX := 0
             else
              begin
-              bb := (sqr(pi/2)/abs(lc)+abs(lc))/2;
+              bb := (sqr(Pi/2)/abs(Lc)+abs(Lc))/2;
               if sqr(bb)>sqr(bY) then gg := sqrt(sqr(bb)-sqr(bY)) else gg := 0;
-              bX := sgn(lc)*(abs(lc)-bb+gg);
+              bX := sgn(Lc)*(abs(Lc)-bb+gg);
              end;
            end;
        96: begin
-            bY := fc;
-            if lc=0 then bX := 0
+            bY := Fc;
+            if Lc=0 then bX := 0
             else
              begin
-              p := (sqr(pi/2)+sqr(lc))/2/abs(lc);
-              if abs(lc)<=pi/2 then bX := (abs(lc)-p+sqrt(sqr(p)-sqr(fc)))*sgn(lc)
+              p := (sqr(Pi/2)+sqr(Lc))/2/abs(Lc);
+              if abs(Lc)<=Pi/2 then bX := (abs(Lc)-p+sqrt(sqr(p)-sqr(Fc)))*sgn(Lc)
               else
                begin
-                if abs(fc)>=pi/2-0.001 then bX := (abs(lc)-pi/2)*sgn(lc)
-                else bX := (abs(lc)-pi/2+sqrt(sqr(pi/2)-sqr(fc)))*sgn(lc);
+                if abs(Fc)>=Pi/2-0.001 then bX := (abs(Lc)-Pi/2)*sgn(Lc)
+                else bX := (abs(Lc)-Pi/2+sqrt(sqr(Pi/2)-sqr(Fc)))*sgn(Lc);
                end;
              end;
            end;
        97: begin
-            bY := fc;
-            bX := lc*(pi/2-abs(fc))/(pi/2);
+            bY := Fc;
+            bX := Lc*(Pi/2-abs(Fc))/(Pi/2);
            end;
        98: begin
-            if (abs(lc)<0.001) or (abs(fc)>arcus(89.9)) then bX := 0
-            else bX := 2*sqrt(2)*lc*sin((pi/2-abs(fc))/2)/sqrt(pi);
-            bY := sqrt(pi)*(1-1.41421356*sin((pi/2-abs(fc))/2))*sgn(fc);
+            if (abs(Lc)<0.001) or (abs(Fc)>arcus(89.9)) then bX := 0
+            else bX := 2*sqrt(2)*Lc*sin((Pi/2-abs(Fc))/2)/sqrt(Pi);
+            bY := sqrt(Pi)*(1-1.41421356*sin((Pi/2-abs(Fc))/2))*sgn(Fc);
            end;
        99: begin
-            bX := lc/pi*(pi-abs(fc));
-            bY := fc;
+            bX := Lc/Pi*(Pi-abs(Fc));
+            bY := Fc;
            end;
        180: begin
-            bX := 0.460658866*lc*sqrt(4-3*sin(abs(fc)));
-            bY := 1.447202509*sgn(fc)*(2-sqrt(4-3*sin(abs(fc))));
+            bX := 0.460658866*Lc*sqrt(4-3*sin(abs(Fc)));
+            bY := 1.447202509*sgn(Fc)*(2-sqrt(4-3*sin(abs(Fc))));
            end;
        181:begin
-           bb := abs(2*fc/pi);
+           bb := abs(2*Fc/Pi);
            cc := sqrt(1-sqr(bb));
-           if pi/2-abs(fc)<0.001 then
+           if Pi/2-abs(Fc)<0.001 then
             begin
              bX := 0;
-             bY := sgn(fc)*pi;
+             bY := sgn(Fc)*Pi;
             end
            else
-           if abs(fc)<0.0001 then
+           if abs(Fc)<0.0001 then
             begin
-             bX := lc;
+             bX := Lc;
              bY := 0;
             end
            else
-           if abs(lc)<0.0001 then
+           if abs(Lc)<0.0001 then
             begin
              bX := 0;
-             bY := sgn(fc)*pi*bb/(1+cc);
+             bY := sgn(Fc)*Pi*bb/(1+cc);
             end
            else
             begin
-             aa := abs(pi/lc-lc/pi)/2;
+             aa := abs(Pi/Lc-Lc/Pi)/2;
              gg := bb/(1+cc);
-             bX := sgn(lc)*pi*(sqrt(sqr(aa)+1-sqr(gg))-aa);
-             bY := sgn(fc)*pi*gg;
+             bX := sgn(Lc)*Pi*(sqrt(sqr(aa)+1-sqr(gg))-aa);
+             bY := sgn(Fc)*Pi*gg;
             end;
            end;
        182:begin
-             bY := fc;
+             bY := Fc;
              gg := 4.478461;
-             if fc<-pi/4 then aa := 3*sin(2*fc+pi)
+             if Fc<-Pi/4 then aa := 3*sin(2*Fc+Pi)
              else
-             if fc<0 then aa := gg*3/2*sin(2/3*fc+2*pi/3)-1.5*gg+3
+             if Fc<0 then aa := gg*3/2*sin(2/3*Fc+2*Pi/3)-1.5*gg+3
              else
-             if fc<pi/6 then aa := gg*sin(fc+4*pi/3)+gg+1.5
+             if Fc<Pi/6 then aa := gg*sin(Fc+4*Pi/3)+gg+1.5
              else
-             if fc<pi/3 then aa := sin(6*fc+pi/2)/4+1.75
-             else aa := 2*sin(3*fc-pi/2);
-             bX := aa*lc/pi;
+             if Fc<Pi/3 then aa := sin(6*Fc+Pi/2)/4+1.75
+             else aa := 2*sin(3*Fc-Pi/2);
+             bX := aa*Lc/Pi;
            end;
        183:begin
-             bY := fc;
+             bY := Fc;
              gg := 4.478461;
-             if fc<-pi/4 then aa := sqrt((sqr(pi)/16-sqr(-fc-pi/4))*9/sqr(pi)*16)
+             if Fc<-Pi/4 then aa := sqrt((sqr(Pi)/16-sqr(-Fc-Pi/4))*9/sqr(Pi)*16)
              else
-             if fc<0 then aa := gg*3/2*sin(2/3*fc+2*pi/3)-1.5*gg+3
+             if Fc<0 then aa := gg*3/2*sin(2/3*Fc+2*Pi/3)-1.5*gg+3
              else
-             if fc<pi/6 then aa := gg*sin(fc+4*pi/3)+gg+1.5
+             if Fc<Pi/6 then aa := gg*sin(Fc+4*Pi/3)+gg+1.5
              else
-             if fc<pi/3 then aa := sin(6*fc+pi/2)/4+1.75
-             else aa := sqrt((sqr(pi)/36-sqr(fc-pi/3))*4/sqr(pi)*36);
-             bX := aa*lc/pi/2;
+             if Fc<Pi/3 then aa := sin(6*Fc+Pi/2)/4+1.75
+             else aa := sqrt((sqr(Pi)/36-sqr(Fc-Pi/3))*4/sqr(Pi)*36);
+             bX := aa*Lc/Pi/2;
            end;
        end;
-       aX := trunc(bX*Fold/1000/Vezuv);
-       aY := trunc(bY*Fold/1000/Vezuv);
+       aX := Trunc(bX*Fold/1000/Vezuv);
+       aY := Trunc(bY*Fold/1000/Vezuv);
       end;
     5:begin
-       case aktiv of
+       case AktivVetulet of
        100: begin
-             bX := 2.828427125*cos(fc)*sin(lc/2)/sqrt(1+cos(fc)*cos(lc/2));
-             bY := 1.414213562*sin(fc)/sqrt(1+cos(fc)*cos(lc/2));
+             bX := 2.828427125*cos(Fc)*sin(Lc/2)/sqrt(1+cos(Fc)*cos(Lc/2));
+             bY := 1.414213562*sin(Fc)/sqrt(1+cos(Fc)*cos(Lc/2));
             end;
        101: begin
-             bX := 2*arccos(cos(fc)*cos(lc/2))*cos(fc)*sin(lc/2)/
-               sqrt(1-sqr(cos(fc)*cos(lc/2)));
-             bY := arccos(cos(fc)*cos(lc/2))*sin(fc)/
-               sqrt(1-sqr(cos(fc)*cos(lc/2)));
+             bX := 2*arccos(cos(Fc)*cos(Lc/2))*cos(Fc)*sin(Lc/2)/
+               sqrt(1-sqr(cos(Fc)*cos(Lc/2)));
+             bY := arccos(cos(Fc)*cos(Lc/2))*sin(Fc)/
+               sqrt(1-sqr(cos(Fc)*cos(Lc/2)));
             end;
        102: begin
-             bX := (cos(arcus(fis))*lc+2*arccos(cos(fc)*cos(lc/2))*cos(fc)*sin(lc/2)/
-               sqrt(1-sqr(cos(fc)*cos(lc/2))))/2;
-             bY := (fc+arccos(cos(fc)*cos(lc/2))*sin(fc)/
-               sqrt(1-sqr(cos(fc)*cos(lc/2))))/2;
+             bX := (cos(arcus(fis))*Lc+2*arccos(cos(Fc)*cos(Lc/2))*cos(Fc)*sin(Lc/2)/
+               sqrt(1-sqr(cos(Fc)*cos(Lc/2))))/2;
+             bY := (Fc+arccos(cos(Fc)*cos(Lc/2))*sin(Fc)/
+               sqrt(1-sqr(cos(Fc)*cos(Lc/2))))/2;
             end;
        103: begin
-             bX := 0.93541*sqrt(8)*cos(fc)*sin(lc/2)/sqrt(cos(fc)*cos(lc/2)+1);
-             bY := sqrt(2)/0.93541*sin(fc)/sqrt(cos(fc)*cos(lc/2)+1);
+             bX := 0.93541*sqrt(8)*cos(Fc)*sin(Lc/2)/sqrt(cos(Fc)*cos(Lc/2)+1);
+             bY := sqrt(2)/0.93541*sin(Fc)/sqrt(cos(Fc)*cos(Lc/2)+1);
             end;
        104: begin
-             ss := 0.90631*sin(fc);
+             ss := 0.90631*sin(Fc);
              cc := sqrt(1-sqr(ss));
-             bb := sqrt(2/(1+cc*cos(lc/3)));
-             bX := 2.66723*cc*bb*sin(lc/3);
+             bb := sqrt(2/(1+cc*cos(Lc/3)));
+             bX := 2.66723*cc*bb*sin(Lc/3);
              bY := 1.24104*ss*bb;
             end;
        105: begin
-             ss := sin(lc/2);
-             cc := cos(lc/2);
-             tt := sin(fc/2)/(cos(fc/2)+cc*sqrt(2*cos(fc)));
+             ss := sin(Lc/2);
+             cc := cos(Lc/2);
+             tt := sin(Fc/2)/(cos(Fc/2)+cc*sqrt(2*cos(Fc)));
              bb := sqrt(2/(1+sqr(tt)));
-             qq := sqrt((cos(fc/2)+sqrt(cos(fc)/2)*(cc+ss))/
-               (cos(fc/2)+sqrt(cos(fc)/2)*(cc-ss)));
+             qq := sqrt((cos(Fc/2)+sqrt(cos(Fc)/2)*(cc+ss))/
+               (cos(Fc/2)+sqrt(cos(Fc)/2)*(cc-ss)));
              bX := 5.828427125*(-2*ln(qq)+bb*(qq-1/qq));
              bY := 5.828427125*(-2*arctan(tt)+bb*tt*(qq+1/qq))
             end;
        106: begin
-               aa := sqrt(1-sqr(tan(fc/2)));
-               cc := 1+aa*cos(lc/2);
-               pp := sin(lc/2)*aa/cc;
-               qq := tan(fc/2)/cc;
+               aa := sqrt(1-sqr(tan(Fc/2)));
+               cc := 1+aa*cos(Lc/2);
+               pp := sin(Lc/2)*aa/cc;
+               qq := tan(Fc/2)/cc;
                bX := 4/3*pp*(3+sqr(pp)-3*sqr(qq));
                bY := 4/3*qq*(3+3*sqr(pp)-sqr(qq));
             end;
        107: begin
-             bX := (1+cos(fc))*sin(lc/2);
-             bY := (1+sin(betan)-cos(betan))/2+sin(fc)*cos(betan)-
-               (1+cos(fc))*sin(betan)*cos(lc/2);
-             if fin<>0 then beta0 := -arctan(cos(lc/2)/tan(betan))
-             else beta0 := -pi/2;
+             bX := (1+cos(Fc))*sin(Lc/2);
+             bY := (1+sin(betan)-cos(betan))/2+sin(Fc)*cos(betan)-
+               (1+cos(Fc))*sin(betan)*cos(Lc/2);
+             if fin<>0 then beta0 := -arctan(cos(Lc/2)/tan(betan))
+             else beta0 := -Pi/2;
             end;
        108:begin
-             bX := lc;
+             bX := Lc;
              gg := 4.478461;
-             bb := lc/2*11/12;
-             if bb<-pi/4 then aa := sqrt((sqr(pi)/16-sqr(-bb-pi/4))*9/sqr(pi)*16)
+             bb := Lc/2*11/12;
+             if bb<-Pi/4 then aa := sqrt((sqr(Pi)/16-sqr(-bb-Pi/4))*9/sqr(Pi)*16)
              else
-             if bb<0 then aa := gg*3/2*sin(2/3*bb+2*pi/3)-1.5*gg+3
+             if bb<0 then aa := gg*3/2*sin(2/3*bb+2*Pi/3)-1.5*gg+3
              else
-             if bb<pi/6 then aa := gg*sin(bb+4*pi/3)+gg+1.5
+             if bb<Pi/6 then aa := gg*sin(bb+4*Pi/3)+gg+1.5
              else
-             if bb<pi/3 then aa := sin(6*bb+pi/2)/4+1.75
-             else aa := sqrt((sqr(pi)/36-sqr(bb-pi/3))*4/sqr(pi)*36);
-             bY := aa*fc/pi*2;
+             if bb<Pi/3 then aa := sin(6*bb+Pi/2)/4+1.75
+             else aa := sqrt((sqr(Pi)/36-sqr(bb-Pi/3))*4/sqr(Pi)*36);
+             bY := aa*Fc/Pi*2;
            end;
        109:begin
-             bX := lc;
-             bY := fia2*sin(lc*fih)/fih+fc;
+             bX := Lc;
+             bY := fia2*sin(Lc*fih)/fih+Fc;
            end;
        110:begin
-             bX := lc;
-             bY := fia2*sin(lc*fih)/fih+sin(fc);
+             bX := Lc;
+             bY := fia2*sin(Lc*fih)/fih+sin(Fc);
            end;
 
           end;
-          aX := trunc(bX*Fold/1000/Vezuv);
-          aY := trunc(bY*Fold/1000/Vezuv);
+          aX := Trunc(bX*Fold/1000/Vezuv);
+          aY := Trunc(bY*Fold/1000/Vezuv);
         end;
       end;
     end;
@@ -1557,66 +1593,66 @@ implementation
           result := a1 + (a2 - a1) * (top - b1) / (b2 - b1);
         end;
       begin
-        if not (aktiv in [65,94,95,98]) and (fi12 < Arcus(minfi)) then begin
-          x12 := trunc(hataron(x1, x2, fca, fc, Arcus(minfi)));
-          y12 := trunc(hataron(y1, y2, fca, fc, Arcus(minfi)));
+        if not (AktivVetulet in [65,94,95,98]) and (fi12 < Arcus(minfi)) then begin
+          x12 := Trunc(hataron(x1, x2, Fca, Fc, Arcus(minfi)));
+          y12 := Trunc(hataron(y1, y2, Fca, Fc, Arcus(minfi)));
         end;
 
         // Mercator-féle v. szögtartó és két paralelkörben hossztartó vetület
-        if (aktiv in [44,45]) and (fi12 > -Arcus(minfi)) then begin
-          x12 := trunc(hataron(x1, x2, fca, fc, -Arcus(minfi)));
-          y12 := trunc(hataron(y1, y2, fca, fc, -Arcus(minfi)));
+        if (AktivVetulet in [44,45]) and (fi12 > -Arcus(minfi)) then begin
+          x12 := Trunc(hataron(x1, x2, Fca, Fc, -Arcus(minfi)));
+          y12 := Trunc(hataron(y1, y2, Fca, Fc, -Arcus(minfi)));
         end;
 
         // Szögtartó polikónikus vetület
-        if (aktiv = 65) then begin
+        if (AktivVetulet = 65) then begin
           if (la12 > Arcus(minfi)) then begin
-            x12 := trunc(hataron(x1, x2, lca, lc, Arcus(minfi)));
-            y12 := trunc(hataron(y1, y2, lca, lc, Arcus(minfi)));
+            x12 := Trunc(hataron(x1, x2, Lca, Lc, Arcus(minfi)));
+            y12 := Trunc(hataron(y1, y2, Lca, Lc, Arcus(minfi)));
           end;
           if (la12 < -Arcus(minfi)) then begin
-            x12 := trunc(hataron(x1, x2, lca, lc, -Arcus(minfi)));
-            y12 := trunc(hataron(y1, y2, lca, lc, -Arcus(minfi)));
+            x12 := Trunc(hataron(x1, x2, Lca, Lc, -Arcus(minfi)));
+            y12 := Trunc(hataron(y1, y2, Lca, Lc, -Arcus(minfi)));
           end;
         end;
 
         // Apianus I., Bacon-féle, Collignon-féle vetület
-        if (aktiv in [94,95,98]) then begin
+        if (AktivVetulet in [94,95,98]) then begin
           if (fel) and (la12>arcus(90)) then begin
-            x12 := trunc(hataron(x1, x2, lca, lc, Arcus(90)));
-            y12 := trunc(hataron(y1, y2, lca, lc, Arcus(90)));
+            x12 := Trunc(hataron(x1, x2, Lca, Lc, Arcus(90)));
+            y12 := Trunc(hataron(y1, y2, Lca, Lc, Arcus(90)));
           end;
           if (fel) and (la12 < -Arcus(90)) then begin
-            x12 := trunc(hataron(x1, x2, lca, lc, -Arcus(90)));
-            y12 := trunc(hataron(y1, y2, lca, lc, -Arcus(90)));
+            x12 := Trunc(hataron(x1, x2, Lca, Lc, -Arcus(90)));
+            y12 := Trunc(hataron(y1, y2, Lca, Lc, -Arcus(90)));
           end;
         end;
 
         if x12 < Baltop then begin
           x12 := Baltop;
-          y12 := trunc(hataron(y1, y2, x1, x2, Baltop));
+          y12 := Trunc(hataron(y1, y2, x1, x2, Baltop));
         end;
         if x12 > Jobbtop then begin
           x12 := Jobbtop;
-          y12 := trunc(hataron(y1, y2, x1, x2, Jobbtop));
+          y12 := Trunc(hataron(y1, y2, x1, x2, Jobbtop));
         end;
         if y12 < Lenntop then begin
           y12 := Lenntop;
-          x12 := trunc(hataron(x1, x2, y1, y2, Lenntop));
+          x12 := Trunc(hataron(x1, x2, y1, y2, Lenntop));
         end;
         if y12>Fenntop then begin
           y12 := Fenntop;
-          x12 := trunc(hataron(x1, x2, y1, y2, Fenntop));
+          x12 := Trunc(hataron(x1, x2, y1, y2, Fenntop));
         end;
       end; // procedure hatarszamito
 
       function kintie : Boolean;
       begin
         if (x2 < Baltop) or (x2 > Jobbtop) or (y2 < Lenntop) or (y2 > Fenntop)
-        or ((aktiv <> 65) and ((fc < Arcus(minfi)) or ((aktiv in [44,45]) and (fc > -Arcus(minfi)))))
-        or ( aktiv =  65) and (abs(lc) > Arcus(minfi))
-        or ((aktiv = 107) and (fc < beta0))
-        or ((aktiv in [94,95,98]) and (fel) and (abs(lc) > Arcus(90))) then
+        or ((AktivVetulet <> 65) and ((Fc < Arcus(minfi)) or ((AktivVetulet in [44,45]) and (Fc > -Arcus(minfi)))))
+        or ( AktivVetulet =  65) and (abs(Lc) > Arcus(minfi))
+        or ((AktivVetulet = 107) and (Fc < beta0))
+        or ((AktivVetulet in [94,95,98]) and (fel) and (abs(Lc) > Arcus(90))) then
           result := True
         else
           result := False;
@@ -1625,38 +1661,38 @@ implementation
       function Atszel : Boolean;
       begin
         result := False;
-        case family of
+        case Csalad of
         0 :
-          if (lca * lc < 0) and (abs(lca - lc) > pi / 18) and (abs(lca - lc) < 35 * pi / 18) then
+          if (Lca * Lc < 0) and (abs(Lca - Lc) > Pi / 18) and (abs(Lca - Lc) < 35 * Pi / 18) then
             result := True;
         1 :
-          if (abs(lca - lc) > pi / 8) or ((fc > 1.56) and (abs(lca - lc) > pi / 36))
-          and not ((aktiv in [23,26]) and (fc > pi / 2 - 0.1) and (fca > pi / 2 - 0.1))
+          if (abs(Lca - Lc) > Pi / 8) or ((Fc > 1.56) and (abs(Lca - Lc) > Pi / 36))
+          and not ((AktivVetulet in [23,26]) and (Fc > Pi / 2 - 0.1) and (Fca > Pi / 2 - 0.1))
           then result := True;
         2 :
-          if (lca * lc < 0) and (abs(lca - lc) > pi / 2) then
+          if (Lca * Lc < 0) and (abs(Lca - Lc) > Pi / 2) then
             result := True;
         3 :
-          if (lca * lc < 0) and (abs(lca - lc) > pi / 2) then
+          if (Lca * Lc < 0) and (abs(Lca - Lc) > Pi / 2) then
             result := True;
         4 :
-          if (lca * lc < 0) and (abs(lca - lc) > pi / 4) and (abs(fc) < pi / 2 - 0.01) and (abs(fca) < pi / 2 - 0.01) then
+          if (Lca * Lc < 0) and (abs(Lca - Lc) > Pi / 4) and (abs(Fc) < Pi / 2 - 0.01) and (abs(Fca) < Pi / 2 - 0.01) then
             result := True;
         5 :
-          if (lca * lc < 0) and (abs(lca - lc) > pi / 2) then
+          if (Lca * Lc < 0) and (abs(Lca - Lc) > Pi / 2) then
             result := True;
         end;
 
         // Goode-féle vetület
-        if (aktiv = 90)
-        and (((fc < 0) and (((lc  < Arcus(-100)) and (lca > Arcus(-100)))
-                         or ((lca < Arcus(-100)) and (lc  > Arcus(-100)))
-                         or ((lc  < Arcus(-20 )) and (lca > Arcus(-20 )))
-                         or ((lca < Arcus(-20 )) and (lc  > Arcus(-20 )))
-                         or ((lc  < Arcus( 80 )) and (lca > Arcus( 80 )))
-                         or ((lca < Arcus( 80 )) and (lc  > Arcus( 80 )))))
-          or ((fc > 0) and (((lc  < Arcus(-40 )) and (lca > Arcus(-40 )))
-                         or ((lca < Arcus(-40 )) and (lc  > Arcus(-40))))))
+        if (AktivVetulet = 90)
+        and (((Fc < 0) and (((Lc  < Arcus(-100)) and (Lca > Arcus(-100)))
+                         or ((Lca < Arcus(-100)) and (Lc  > Arcus(-100)))
+                         or ((Lc  < Arcus(-20 )) and (Lca > Arcus(-20 )))
+                         or ((Lca < Arcus(-20 )) and (Lc  > Arcus(-20 )))
+                         or ((Lc  < Arcus( 80 )) and (Lca > Arcus( 80 )))
+                         or ((Lca < Arcus( 80 )) and (Lc  > Arcus( 80 )))))
+          or ((Fc > 0) and (((Lc  < Arcus(-40 )) and (Lca > Arcus(-40 )))
+                         or ((Lca < Arcus(-40 )) and (Lc  > Arcus(-40))))))
         then result := True;
 
         if not OptionsForm.HosszuChk.Checked and (sqr(x2 - x1) + sqr(y2 - y1) > 1000000) then
@@ -1682,8 +1718,8 @@ implementation
             Kint := True;
             x12 := x2;
             y12 := y2;
-            fi12 := fc;
-            la12 := lc;
+            fi12 := Fc;
+            la12 := Lc;
 
             if Atszel then
               mozgat(x2, y2)
@@ -1702,8 +1738,8 @@ implementation
             Kint := False;
             x12 := x1;
             y12 := y1;
-            fi12 := fca;
-            la12 := lca;
+            fi12 := Fca;
+            la12 := Lca;
 
             if Atszel then
               mozgat(x2,y2)
@@ -1720,24 +1756,24 @@ implementation
     procedure paralelkor;
     begin
       q := 0;
-      la := 179.999 + Tatu;
+      La := 179.999 + Tatu;
       repeat
         q := q + 1;
-        la := la - Tatu;
-        if Almost(la, -180) then
-          la := -179.999;
-        if segede then
-          seged(Arcus(fi), Arcus(la), fc, lc)
+        La := La - Tatu;
+        if Almost(La, -180) then
+          La := -179.999;
+        if Ferde then
+          seged(Arcus(Fi), Arcus(La), Fc, Lc)
         else begin
-          fc := Arcus(fi);
-          lc := Arcus(la);
+          Fc := Arcus(Fi);
+          Lc := Arcus(La);
         end;
 
         Vizsgal;
 
-        lca := lc;
-        fca := fc;
-      until Almost(la, -180);
+        Lca := Lc;
+        Fca := Fc;
+      until Almost(La, -180);
     end;
 
     procedure Tartalomrajzolo;
@@ -1748,25 +1784,25 @@ implementation
       Reset(txt);
 
       repeat
-        readln(txt, fi, la);
-        if (fi = 0) and (la = 0) then
+        readln(txt, Fi, La);
+        if (Fi = 0) and (La = 0) then
           q := 0
         else begin
-          fi := fi + 0.001;
-          la := la + 0.001;
+          Fi := Fi + 0.001;
+          La := La + 0.001;
           q := q + 1;
           u := u + 1;
-          if segede then
-            seged(Arcus(fi), Arcus(la), fc, lc)
+          if Ferde then
+            seged(Arcus(Fi), Arcus(La), Fc, Lc)
           else begin
-            fc := Arcus(fi);
-            lc := Arcus(la);
+            Fc := Arcus(Fi);
+            Lc := Arcus(La);
           end;
 
           Vizsgal;
 
-          lca := lc;
-          fca := fc;
+          Lca := Lc;
+          Fca := Fc;
 
           if u mod 2100 = 0 then begin
             Progpos := Progpos + 100 / Prog;
@@ -1781,27 +1817,28 @@ implementation
       CloseFile(txt);
     end;
 
-    procedure deltavizsgalo(fok: TEdit; maxi: Byte; var egydelta: Byte);
+    function SurusegFokVizsgalo(FokEd: TEdit; MaxFok: Byte; var Suruseg: Byte) : Boolean;
     begin
-      if Nagyitvizsgal(fok.Text) then begin
-        egydelta := StrToInt(fok.Text);
-        if egydelta > maxi then
-          rossz := True;
+      Result := True;
+      if Nagyitvizsgal(FokEd.Text) then begin
+        Suruseg := StrToInt(FokEd.Text);
+        if Suruseg > MaxFok then
+          Result := False;
       end else begin
-        rossz := True;
+        Result := False;
       end;
 
-      if rossz then begin
+      if not Result then begin
         UjForm.Visible := True;
         UjForm.PageControl1.ActivePage := UjForm.Tartalombox;
-        fok.SetFocus;
-        Ervmsg;
+        FokEd.SetFocus;
+        InvalidValueMsg;
       end;
     end;
 
   begin // FrissitClick
     TRY
-      Marvan := False;
+      VanMeres := False;
       StatusBar3.Visible := False;
       Abra.Cursor := crDefault;
 
@@ -1832,25 +1869,25 @@ implementation
         Etna2 := Etna;
 
       if not Zoomol and Lupe then begin
-        if Nagyitvizsgal(Nagyit.Text) = True then begin
-          Etna := StrToInt(Copy(Nagyit.Text, 1, szamhossz2));
+        if Nagyitvizsgal(NagyitasCB.Text) = True then begin
+          Etna := StrToInt(Copy(NagyitasCB.Text, 1, szamhossz2));
         end else begin
-          Nagyit.SetFocus;
-          Ervmsg;
+          NagyitasCB.SetFocus;
+          InvalidValueMsg;
           Exit;
         end;
       end;
 
-      if Nagyitvizsgal(Meretarany.Text) = True then begin
-        Vezuv := StrToInt(Meretarany.Text);
+      if Nagyitvizsgal(MeretaranyEd.Text) = True then begin
+        Vezuv := StrToInt(MeretaranyEd.Text);
       end else begin
-        Meretarany.SetFocus;
-        Ervmsg;
+        MeretaranyEd.SetFocus;
+        InvalidValueMsg;
         Exit;
       end;
 
-      if (Nagyitvizsgal(UjForm.KozMerFok.Text) = True) or (UjForm.KozMerFok.Text = '0') then begin
-        KM := StrToInt(UjForm.KozMerFok.Text);
+      if (Nagyitvizsgal(UjForm.KozMerFokEd.Text) = True) or (UjForm.KozMerFokEd.Text = '0') then begin
+        KM := StrToInt(UjForm.KozMerFokEd.Text);
         if abs(KM) > 180 then
           rossz := True
         else
@@ -1862,34 +1899,29 @@ implementation
       if rossz then begin
         UjForm.Visible := True;
         UjForm.PageControl1.ActivePage := UjForm.Vetuletbox;
-        UjForm.KozMerFok.SetFocus;
-        Ervmsg;
+        UjForm.KozMerFokEd.SetFocus;
+
+        InvalidValueMsg;
         Exit;
       end;
 
-      Deltavizsgalo(UjForm.MerSurusegFok, 180, Delta1);
-      if rossz then
+      if not SurusegFokVizsgalo(UjForm.MerSurusegFokEd, 180, MerSurusegFok) then
         Exit;
-
-      Deltavizsgalo(UjForm.ParSurusegFok, 90, Delta2);
-      if rossz then
+      if not SurusegFokVizsgalo(UjForm.ParSurusegFokEd, 90, ParSurusegFok) then
         Exit;
 
       if UjForm.FerdeBtn.Checked then begin
-        Deltavizsgalo(UjForm.SegMerSurusegFok, 180, Delta3);
-        if rossz then
+        if not SurusegFokVizsgalo(UjForm.SegMerSurusegFokEd, 180, SegMerSurusegFok) then
+          Exit;
+        if not SurusegFokVizsgalo(UjForm.SegParSurusegFokEd, 90, SegParSurusegFok) then
           Exit;
 
-        Deltavizsgalo(UjForm.SegParSurusegFok, 90, Delta4);
-        if rossz then
-          Exit;
-
-        if (Nagyitvizsgal(UjForm.PolusSzelesFok.Text) = True) or (UjForm.PolusSzelesFok.Text='0') then begin
-          f0 := StrToFloat(UjForm.PolusSzelesFok.Text);
-          if abs(f0) > 90 then
+        if (Nagyitvizsgal(UjForm.PolusSzelesFokEd.Text) = True) or (UjForm.PolusSzelesFokEd.Text='0') then begin
+          F0 := StrToFloat(UjForm.PolusSzelesFokEd.Text);
+          if abs(F0) > 90 then
             rossz := True
           else
-            f0 := arcus(f0);
+            F0 := arcus(F0);
         end else begin
           rossz := True;
         end;
@@ -1897,17 +1929,18 @@ implementation
         if rossz then begin
           UjForm.Visible := True;
           UjForm.PageControl1.ActivePage := UjForm.Vetuletbox;
-          UjForm.PolusSzelesFok.SetFocus;
-          Ervmsg;
+          UjForm.PolusSzelesFokEd.SetFocus;
+
+          InvalidValueMsg;
           Exit;
         end;
 
-        if (Nagyitvizsgal(UjForm.PolusHosszuFok.Text) = True) or (UjForm.PolusHosszuFok.Text = '0') then begin
-          l0 := StrToFloat(UjForm.PolusHosszuFok.Text);
-          if abs(l0) > 180 then
+        if (Nagyitvizsgal(UjForm.PolusHosszuFokEd.Text) = True) or (UjForm.PolusHosszuFokEd.Text = '0') then begin
+          L0 := StrToFloat(UjForm.PolusHosszuFokEd.Text);
+          if abs(L0) > 180 then
             rossz := True
           else
-            l0 := arcus(l0);
+            L0 := arcus(L0);
         end else begin
           rossz := True;
         end;
@@ -1915,8 +1948,9 @@ implementation
         if rossz then begin
           UjForm.Visible := True;
           UjForm.PageControl1.ActivePage := UjForm.Vetuletbox;
-          UjForm.PolusHosszuFok.SetFocus;
-          Ervmsg;
+          UjForm.PolusHosszuFokEd.SetFocus;
+
+          InvalidValueMsg;
           Exit;
         end;
       end;
@@ -1936,18 +1970,23 @@ implementation
         TavolsagBtn.Enabled := True;
       end;
 
-      if plt then begin
-        // Ábra mentése folyamatban
-        ProgressForm.ProgressLabel.Visible  := False;
-        ProgressForm.ProgressLabel2.Visible := True;
-        ProgressForm.ProgressLabel3.Visible := False;
-      end else begin
-        if nyom then begin
+      case Mode of
+      PLTMODE :
+        begin
+          // Ábra mentése folyamatban
+          ProgressForm.ProgressLabel.Visible  := False;
+          ProgressForm.ProgressLabel2.Visible := True;
+          ProgressForm.ProgressLabel3.Visible := False;
+        end;
+      PRINTMODE :
+        begin
           // Ábra nyomtatása folyamatban
           ProgressForm.ProgressLabel.Visible  := False;
           ProgressForm.ProgressLabel2.Visible := False;
           ProgressForm.ProgressLabel3.Visible := True;
-        end else begin
+        end;
+      else
+        begin
           // Ábra frissítése folyamatban
           ProgressForm.ProgressLabel.Visible  := True;
           ProgressForm.ProgressLabel2.Visible := False;
@@ -1960,8 +1999,8 @@ implementation
       Application.ProcessMessages;
 
       if not origomas then begin
-        Omovex := 0;
-        Omovey := 0;
+        OMoveX := 0;
+        OMoveY := 0;
       end;
 
       Megse := False;
@@ -1980,12 +2019,12 @@ implementation
       if UjForm.ToChk.Checked then
         Prog := Prog + Progto;
 
-      segede := Ujform.FerdeBtn.Checked;
-      family := UjForm.CsaladCB.Itemindex;
+      Ferde := Ujform.FerdeBtn.Checked;
+      Csalad := UjForm.CsaladCB.Itemindex;
 
       if not Sajt2 then begin
-        SBHelyX := Scrollbox1.HorzScrollBar.Position;
-        SBHelyY := Scrollbox1.VertScrollbar.Position;
+        SBHelyX := ScrollBox1.HorzScrollBar.Position;
+        SBHelyY := ScrollBox1.VertScrollbar.Position;
       end;
 
       if Sajt3 then begin
@@ -1995,7 +2034,7 @@ implementation
 
       inicializalo;
 
-      case aktiv of
+      case AktivVetulet of
       2,3,22,23,27: // Sztereografikus / gnomonikus síkvetület
                     // Szögtartó és egy paralelkörben hossztartó / Lambert-Gauss-féle / perspektív kúpvetület
         minfi := 90 - fik;
@@ -2009,22 +2048,22 @@ implementation
         minfi := -90;
       end;
 
-      segede := True;
+      Ferde := True;
       q := 0;
 
       if not Crop then begin
         {határoló vonalak}
         Tatuado(UjForm.ParReszletCB.ItemIndex);
 
-        case family of
+        case Csalad of
         0:
           begin
-            la := 181;
-            fc := Arcus(minfi);
+            La := 181;
+            Fc := Arcus(minfi);
 
             repeat
-              la := la - 1;
-              lc := Arcus(la);
+              La := La - 1;
+              Lc := Arcus(La);
 
               Vetites(x2, y2);
 
@@ -2032,19 +2071,19 @@ implementation
                 Elsotop
               else
                 Topvizsgalo;
-            until la<-179;
+            until La<-179;
           end;
 
         1:
           begin
             {külsõ paralel}
-            la := 179.999 + Tatu;
-            fc := Arcus(minfi + 0.001);
-            fca := fc;
+            La := 179.999 + Tatu;
+            Fc := Arcus(minfi + 0.001);
+            Fca := Fc;
 
             repeat
-              la := la-Tatu;
-              lc := arcus(la);
+              La := La-Tatu;
+              Lc := arcus(La);
 
               vetites(x2,y2);
 
@@ -2052,53 +2091,53 @@ implementation
                 Elsotop
               else
                 Topvizsgalo;
-              lca := lc;
-            until Almost(la, -180);
+              Lca := Lc;
+            until Almost(La, -180);
 
             {határoló meridiánok}
             Tatuado(UjForm.MerReszletCB.ItemIndex);
 
             for i := 0 to 1 do begin
-              lc := -(pi - 0.00001) + i * 2 * (pi - 0.00001);
-              lca := lc;
-              fi := 89.999 + Tatu;
+              Lc := -(Pi - 0.00001) + i * 2 * (Pi - 0.00001);
+              Lca := Lc;
+              Fi := 89.999 + Tatu;
 
               repeat
-                fi := fi-Tatu;
-                if Almost(fi,-90) then
-                  fi := -89.999;
-                fc := arcus(fi);
+                Fi := Fi-Tatu;
+                if Almost(Fi,-90) then
+                  Fi := -89.999;
+                Fc := arcus(Fi);
 
                 vetites(x2,y2);
                 topvizsgalo;
 
-                fca := fc;
-              until Almost(fi, minfi);
+                Fca := Fc;
+              until Almost(Fi, minfi);
             end;
           end;
 
         2 :
           begin
-            fc := Arcus(minfi + 0.001);
-            lc := Arcus(179.999);
+            Fc := Arcus(minfi + 0.001);
+            Lc := Arcus(179.999);
 
             vetites(x2,y2);
             Elsotop;
 
-            fc := Arcus(minfi + 0.001);
-            lc := Arcus(-179.999);
+            Fc := Arcus(minfi + 0.001);
+            Lc := Arcus(-179.999);
 
             vetites(x2,y2);
             topvizsgalo;
 
-            fc := -Arcus(minfi + 0.001);
-            lc := Arcus(179.999);
+            Fc := -Arcus(minfi + 0.001);
+            Lc := Arcus(179.999);
 
             vetites(x2,y2);
             topvizsgalo;
 
-            fc := -Arcus(minfi + 0.001);
-            lc := Arcus(-179.999);
+            Fc := -Arcus(minfi + 0.001);
+            Lc := Arcus(-179.999);
 
             vetites(x2,y2);
             topvizsgalo;
@@ -2109,19 +2148,19 @@ implementation
             Tatuado(UjForm.MerReszletCB.ItemIndex);
 
             // Oldfield III., Egyszerû hullámvetület, Lambert-féle hullámvetület
-            if aktiv in [108,109,110] then begin
+            if AktivVetulet in [108,109,110] then begin
               q := 0;
 
               for i := 0 to 1 do begin
-                fc := (2 * i - 1) * Arcus(90);
-                la := 179.999 + Tatu;
-                fca := fc;
+                Fc := (2 * i - 1) * Arcus(90);
+                La := 179.999 + Tatu;
+                Fca := Fc;
 
                 repeat
-                  la := la-Tatu;
-                  if Almost(la, -180) then
-                    la := -179.999;
-                  lc := arcus(la);
+                  La := La-Tatu;
+                  if Almost(La, -180) then
+                    La := -179.999;
+                  Lc := arcus(La);
 
                   vetites(x2,y2);
 
@@ -2129,22 +2168,22 @@ implementation
                     Elsotop
                   else
                     topvizsgalo;
-                  lca := lc;
-                until Almost(la, -180);
+                  Lca := Lc;
+                until Almost(La, -180);
               end;
-            end else if aktiv=65 then begin
+            end else if AktivVetulet=65 then begin
               q := 0;
 
               for i := 0 to 1 do begin
-                lc := (2 * i - 1) * Arcus(minfi);
-                fi := 89.999 + Tatu;
-                lca := lc;
+                Lc := (2 * i - 1) * Arcus(minfi);
+                Fi := 89.999 + Tatu;
+                Lca := Lc;
 
                 repeat
-                  fi := fi - Tatu;
-                  if Almost(fi, -90) then
-                    fi := -89.999;
-                  fc := Arcus(fi);
+                  Fi := Fi - Tatu;
+                  if Almost(Fi, -90) then
+                    Fi := -89.999;
+                  Fc := Arcus(Fi);
 
                   vetites(x2,y2);
 
@@ -2152,26 +2191,26 @@ implementation
                     Elsotop
                   else
                     topvizsgalo;
-                  fca := fc;
-                until Almost(fi, -90);
+                  Fca := Fc;
+                until Almost(Fi, -90);
               end;
 
             end else begin
               q := 0;
 
               for i := 0 to 1 do begin
-                if (aktiv in [94,95,98]) and (fel) then
-                  lc := (2 * i - 1) * arcus(89.999)
+                if (AktivVetulet in [94,95,98]) and (fel) then
+                  Lc := (2 * i - 1) * arcus(89.999)
                 else
-                  lc := (2 * i - 1) * arcus(179.999);
-                fi := -minfi - 0.001 + Tatu;
-                lca := lc;
+                  Lc := (2 * i - 1) * arcus(179.999);
+                Fi := -minfi - 0.001 + Tatu;
+                Lca := Lc;
 
                 repeat
-                  fi := fi-Tatu;
-                  if Almost(fi, -90) then
-                    fi := -89.999;
-                  fc := arcus(fi);
+                  Fi := Fi-Tatu;
+                  if Almost(Fi, -90) then
+                    Fi := -89.999;
+                  Fc := arcus(Fi);
 
                   vetites(x2,y2);
 
@@ -2179,17 +2218,17 @@ implementation
                     Elsotop
                   else
                     topvizsgalo;
-                  fca := fc;
-                until Almost(fi, minfi);
+                  Fca := Fc;
+                until Almost(Fi, minfi);
               end;
             end;
           end;
         end;
 
         // Armadillo
-        if (aktiv = 107) and (fin <> 0) then begin
-          lc := 0;
-          fc := -arctan(cos(lc / 2) / tan(betan));
+        if (AktivVetulet = 107) and (fin <> 0) then begin
+          Lc := 0;
+          Fc := -arctan(cos(Lc / 2) / tan(betan));
           vetites(x2, y2);
           topvizsgalo;
         end;
@@ -2214,34 +2253,34 @@ implementation
         end;
 
         if margox / (Jobbtop - Baltop) * (Fenntop - Lenntop) > margoy then
-          Vezuv := q * (trunc(Vezuv * (Fenntop - Lenntop) / margoy) div q + 1)
+          Vezuv := q * (Trunc(Vezuv * (Fenntop - Lenntop) / margoy) div q + 1)
         else
-          Vezuv := q*(trunc(Vezuv*(Jobbtop-Baltop)/margox) div q + 1);
-        Meretarany.Text := IntToStr(Vezuv);
+          Vezuv := q*(Trunc(Vezuv*(Jobbtop-Baltop)/margox) div q + 1);
+        MeretaranyEd.Text := IntToStr(Vezuv);
 
-        Jobbtop := trunc(Vezuv2 / Vezuv * Jobbtop);
-        Baltop := trunc(Vezuv2 / Vezuv * Baltop);
-        Fenntop := trunc(Vezuv2 / Vezuv * Fenntop);
-        Lenntop := trunc(Vezuv2 / Vezuv * Lenntop);
+        Jobbtop := Trunc(Vezuv2 / Vezuv * Jobbtop);
+        Baltop := Trunc(Vezuv2 / Vezuv * Baltop);
+        Fenntop := Trunc(Vezuv2 / Vezuv * Fenntop);
+        Lenntop := Trunc(Vezuv2 / Vezuv * Lenntop);
       end;
 
       if Crop and Sajt then begin
-        Jobbtop := trunc(Vezuv3 / Vezuv * Jobbtop);
-        Baltop := trunc(Vezuv3 / Vezuv * Baltop);
-        Fenntop := trunc(Vezuv3 / Vezuv * Fenntop);
-        Lenntop := trunc(Vezuv3 / Vezuv * Lenntop);
+        Jobbtop := Trunc(Vezuv3 / Vezuv * Jobbtop);
+        Baltop := Trunc(Vezuv3 / Vezuv * Baltop);
+        Fenntop := Trunc(Vezuv3 / Vezuv * Fenntop);
+        Lenntop := Trunc(Vezuv3 / Vezuv * Lenntop);
       end;
 
       TRY
         if not Elso then begin
           Meminfo.dwLength := Sizeof(Meminfo);
           GlobalMemoryStatus(Meminfo);
-          Maxbmp := trunc(0.3 * (Bitmap.Width * Bitmap.Height + 2 * (MemInfo.dwAvailPhys + MemInfo.dwAvailPageFile)));
-          Ujkep := trunc(sqr(Etna * Vezuv3 / Etna2 / Vezuv) * Bitmap.Width * Bitmap.Height);
+          Maxbmp := Trunc(0.3 * (Bitmap.Width * Bitmap.Height + 2 * (MemInfo.dwAvailPhys + MemInfo.dwAvailPageFile)));
+          Ujkep := Trunc(sqr(Etna * Vezuv3 / Etna2 / Vezuv) * Bitmap.Width * Bitmap.Height);
           if sqr(Etna * Vezuv3 / Etna2 / Vezuv) * Bitmap.Width * Bitmap.Height > Maxbmp then
-            Etna := trunc(Etna2*Vezuv/Vezuv3*sqrt(Maxbmp/Bitmap.Width/Bitmap.Height));
+            Etna := Trunc(Etna2*Vezuv/Vezuv3*sqrt(Maxbmp/Bitmap.Width/Bitmap.Height));
           if Etna * Vezuv3 / Etna2 / Vezuv * Bitmap.Width > 5000 then
-            Etna := trunc(Etna2 * Vezuv / Vezuv3 * 5000 / Bitmap.Width);
+            Etna := Trunc(Etna2 * Vezuv / Vezuv3 * 5000 / Bitmap.Width);
         end;
       EXCEPT
         begin
@@ -2249,69 +2288,69 @@ implementation
         end;
       END;
 
-      if not plt and not nyom then
+      if (Mode = DRAWMODE) then
         Bitmap.Free;
 
       Vezuv3 := Vezuv;
 
       if not origomas then begin
         if OptionsForm.Kozepigazit.Checked then begin
-          Omovex := trunc((Baltop + Jobbtop) / 2);
-          Omovey := trunc((Fenntop + Lenntop) / 2);
+          OMoveX := Trunc((Baltop + Jobbtop) / 2);
+          OMoveY := Trunc((Fenntop + Lenntop) / 2);
         end else begin
-          Omovex := 0;
-          Omovey := 0;
+          OMoveX := 0;
+          OMoveY := 0;
         end;
       end;
 
-      if not plt and not nyom then begin
+      if (Mode = DRAWMODE) then begin
 
         if OptionsForm.Abraigazit.Checked then begin
-          Valos.Height := trunc(Ly / 1000 * Felbontas);
-          Valos.Width := trunc(Lx / 1000 * Felbontas);
+          Valos.Height := Trunc(Ly / 1000 * Felbontas);
+          Valos.Width := Trunc(Lx / 1000 * Felbontas);
 
-          if (Fenntop - omovey > Ly / 2) or (Lenntop - omovey < -Ly / 2) then
-            if Fenntop - omovey> -Lenntop + omovey then
-              Valos.Height := trunc(2*(Fenntop - omovey) / 1000 * Felbontas)
+          if (Fenntop - OMoveY > Ly / 2) or (Lenntop - OMoveY < -Ly / 2) then
+            if Fenntop - OMoveY> -Lenntop + OMoveY then
+              Valos.Height := Trunc(2*(Fenntop - OMoveY) / 1000 * Felbontas)
             else
-              Valos.Height := trunc(-2 * (Lenntop - omovey) / 1000 * Felbontas);
+              Valos.Height := Trunc(-2 * (Lenntop - OMoveY) / 1000 * Felbontas);
 
-          if (Jobbtop - omovex > Lx / 2) or (Baltop - omovex < -Lx / 2) then
-            if Jobbtop - omovex > -Baltop + omovex then
-              Valos.Width := trunc(2 * (Jobbtop - omovex) / 1000 * Felbontas)
+          if (Jobbtop - OMoveX > Lx / 2) or (Baltop - OMoveX < -Lx / 2) then
+            if Jobbtop - OMoveX > -Baltop + OMoveX then
+              Valos.Width := Trunc(2 * (Jobbtop - OMoveX) / 1000 * Felbontas)
             else
-              Valos.Width := trunc(-2 * (Baltop - omovex) / 1000 * Felbontas);
+              Valos.Width := Trunc(-2 * (Baltop - OMoveX) / 1000 * Felbontas);
 
           lapmovex := 0;
           lapmovey := 0;
-          komovex := omovex;
-          komovey := omovey;
+          KoMoveX := OMoveX;
+          KoMoveY := OMoveY;
         end else begin
-          Valos.Height := trunc((Fenntop - Lenntop) * Felbontas / 1000);
-          Valos.Width := trunc((Jobbtop - Baltop) * Felbontas / 1000);
-          komovex := trunc((Baltop + Jobbtop) / 2);
-          komovey := trunc((Fenntop + Lenntop) / 2);
-          lapmovex := omovex - komovex;
-          lapmovey := omovey - komovey;
+          Valos.Height := Trunc((Fenntop - Lenntop) * Felbontas / 1000);
+          Valos.Width := Trunc((Jobbtop - Baltop) * Felbontas / 1000);
+          KoMoveX := Trunc((Baltop + Jobbtop) / 2);
+          KoMoveY := Trunc((Fenntop + Lenntop) / 2);
+          lapmovex := OMoveX - KoMoveX;
+          lapmovey := OMoveY - KoMoveY;
         end;
 
-        lc := Scrollbox1.Width / Scrollbox1.Height;
+        Lc := ScrollBox1.Width / ScrollBox1.Height;
 
-        if Valos.Width < Valos.Height * lc then
-          Valos.Width := trunc(Valos.Height * lc);
-        if Valos.Height < Valos.Width / lc then
-          Valos.Height := trunc(Valos.Width / lc);
+        if Valos.Width < Valos.Height * Lc then
+          Valos.Width := Trunc(Valos.Height * Lc);
+        if Valos.Height < Valos.Width / Lc then
+          Valos.Height := Trunc(Valos.Width / Lc);
 
-        Valos.Width := Valos.Width + trunc(100 * Valos.Width / 1600);
-        Valos.Height := Valos.Height + trunc(70 * Valos.Height / 1100);
+        Valos.Width := Valos.Width + Trunc(100 * Valos.Width / 1600);
+        Valos.Height := Valos.Height + Trunc(70 * Valos.Height / 1100);
 
         if OptionsForm.Autozoom.Checked and not Lupe then begin
-          Etna := trunc(100 * (Scrollbox1.Width - 4) / Valos.Width);
-          AWidth := Scrollbox1.Width - 4;
-          AHeight := Scrollbox1.Height - 4;
+          Etna := Trunc(100 * (ScrollBox1.Width - 4) / Valos.Width);
+          AWidth := ScrollBox1.Width - 4;
+          AHeight := ScrollBox1.Height - 4;
         end else begin
-          AWidth := trunc(Etna / 100 * Valos.Width);
-          AHeight := trunc(Etna / 100 * Valos.Height);
+          AWidth := Trunc(Etna / 100 * Valos.Width);
+          AHeight := Trunc(Etna / 100 * Valos.Height);
         end;
 
         repeat
@@ -2344,27 +2383,27 @@ implementation
               Bitmap.Free;
               Ex := True;
 
-              AWidth := trunc(Etna / VEtna * AWidth);
-              if AWidth <= Scrollbox1.Width - 4 then
-                AWidth := Scrollbox1.Width - 4
+              AWidth := Trunc(Etna / VEtna * AWidth);
+              if AWidth <= ScrollBox1.Width - 4 then
+                AWidth := ScrollBox1.Width - 4
               else
-                Scrollbox1.HorzScrollbar.Position := Trunc((Scrollbox1.HorzScrollbar.Range-Scrollbox1.Width)/2);
+                ScrollBox1.HorzScrollbar.Position := Trunc((ScrollBox1.HorzScrollbar.Range-ScrollBox1.Width)/2);
 
-              AHeight := trunc(Etna/VEtna*AHeight);
-              if AHeight <= Scrollbox1.Height-4 then
-                AHeight := Scrollbox1.Height-4
+              AHeight := Trunc(Etna/VEtna*AHeight);
+              if AHeight <= ScrollBox1.Height-4 then
+                AHeight := ScrollBox1.Height-4
               else
-                Scrollbox1.VertScrollbar.Position := Trunc((Scrollbox1.VertScrollbar.Range-Scrollbox1.Height)/2);
+                ScrollBox1.VertScrollbar.Position := Trunc((ScrollBox1.VertScrollbar.Range-ScrollBox1.Height)/2);
             END;
           END;
         until Ex = False;
 
-        if AWidth < Scrollbox1.Width - 4 then
-          AWidth := Scrollbox1.Width-4;
-        if AHeight<Scrollbox1.Height-4 then
-          AHeight := Scrollbox1.Height-4;
+        if AWidth < ScrollBox1.Width - 4 then
+          AWidth := ScrollBox1.Width - 4;
+        if AHeight < ScrollBox1.Height - 4 then
+          AHeight := ScrollBox1.Height - 4;
 
-        Nagyit.Text := IntToStr(Etna) + '%';
+        NagyitasCB.Text := IntToStr(Etna) + '%';
         Application.ProcessMessages;
 
         if Megse then begin
@@ -2372,8 +2411,8 @@ implementation
           Exit;
         end;
 
-        OrigoX := Trunc(Bitmap.Width/2);
-        OrigoY := Trunc(Bitmap.Height/2);
+        OrigoX := Trunc(Bitmap.Width / 2);
+        OrigoY := Trunc(Bitmap.Height / 2);
       end;
 
       if not Crop then begin
@@ -2387,18 +2426,18 @@ implementation
       ProgressForm.ProgressBar1.Position := 3;
 
       // lap kirajzolása
-      if (OptionsForm.LapOn.Checked) and (plt=False) and (nyom=False) then begin
+      if (OptionsForm.LapOn.Checked) and (Mode = DRAWMODE) then begin
         Bitmap.Canvas.Pen.Color := clLtGray;
         if OptionsForm.Lapmilyen.Itemindex = 1 then
           Bitmap.Canvas.Brush.Color := clLtGray
         else
           Bitmap.Canvas.Brush.Color := clWhite;
-        Bitmap.Canvas.Rectangle(OrigoX + trunc((-Lx / 2 + lapmovex) * Felbontas * Etna / 100000),
-                                OrigoY - trunc((-Ly / 2 + lapmovey) * Felbontas * Etna / 100000),
-                                OrigoX + trunc(( Lx / 2 + lapmovex) * Felbontas * Etna / 100000),
-                                OrigoY - trunc(( Ly / 2 + lapmovey) * Felbontas * Etna / 100000));
+        Bitmap.Canvas.Rectangle(OrigoX + Trunc((-Lx / 2 + lapmovex) * Felbontas * Etna / 100000),
+                                OrigoY - Trunc((-Ly / 2 + lapmovey) * Felbontas * Etna / 100000),
+                                OrigoX + Trunc(( Lx / 2 + lapmovex) * Felbontas * Etna / 100000),
+                                OrigoY - Trunc(( Ly / 2 + lapmovey) * Felbontas * Etna / 100000));
       end;
-      segede := Ujform.FerdeBtn.Checked;
+      Ferde := Ujform.FerdeBtn.Checked;
 
       // tartalom kirajzolása
       for j := 4 downto 0 do begin
@@ -2408,33 +2447,33 @@ implementation
           {segédfokhálózat}
           if UjForm.Segedchk.Checked and UjForm.Segedchk.Enabled then begin
             Vastagado(OptionsForm.Vas5.Value);
-            Segede := False;
+            Ferde := False;
             Szinado(UjForm.SegSzinCB);
 
             {segédhosszúsági körök}
             Tatuado(UjForm.SegMerReszletCB.ItemIndex);
-            for i := 0 to 2 * trunc(180 / Delta3) do begin
+            for i := 0 to 2 * Trunc(180 / SegMerSurusegFok) do begin
               q := 0;
-              fi := 89.999;
-              if aktiv in [44,45] then fi := -minfi - 0.001;
-              la := (i - trunc(180 / Delta3)) * Delta3 + 0.001;
+              Fi := 89.999;
+              if AktivVetulet in [44,45] then Fi := -minfi - 0.001;
+              La := (i - Trunc(180 / SegMerSurusegFok)) * SegMerSurusegFok + 0.001;
 
               repeat
                 q := q+1;
                 if q > 2 then
-                  fi := fi-Tatu;
-                if Almost(fi, -90) then
-                  fi := -89.999;
-                fc := arcus(fi);
-                lc := arcus(la);
+                  Fi := Fi-Tatu;
+                if Almost(Fi, -90) then
+                  Fi := -89.999;
+                Fc := arcus(Fi);
+                Lc := arcus(La);
 
                 Vizsgal;
 
-                lca := lc;
-                fca := fc;
-              until Almost(fi, minfi);
+                Lca := Lc;
+                Fca := Fc;
+              until Almost(Fi, minfi);
 
-              Progpos := Progpos + 100 / Prog * 18 * Delta1 / 360;
+              Progpos := Progpos + 100 / Prog * 18 * MerSurusegFok / 360;
               ProgressForm.ProgressBar1.Position := Trunc(Progpos);
               Application.ProcessMessages;
 
@@ -2446,8 +2485,8 @@ implementation
 
             {segédszélességi körök}
             Tatuado(UjForm.SegParReszletCB.ItemIndex);
-            for i := 0 to 180 div delta4 do begin
-              if delta2 * (89 div delta4) - i * delta4 < minfi then begin
+            for i := 0 to 180 div SegParSurusegFok do begin
+              if ParSurusegFok * (89 div SegParSurusegFok) - i * SegParSurusegFok < minfi then begin
                 mike := i;
                 Break;
               end;
@@ -2457,7 +2496,7 @@ implementation
               if i=0 then
                 Continue;
 
-              fi := delta4 * (89 div delta4) - (i - 1) * Delta4 + 0.001;
+              Fi := SegParSurusegFok * (89 div SegParSurusegFok) - (i - 1) * SegParSurusegFok + 0.001;
               paralelkor;
 
               Progpos := progpos + 100 / Prog * 7 / (mike + 1);
@@ -2470,7 +2509,7 @@ implementation
               end;
             end;
 
-            segede := True;
+            Ferde := True;
           end;
         end;
 
@@ -2478,23 +2517,25 @@ implementation
 
           AssignFile(DebugFile, 'debug1.log');
           Rewrite(DebugFile);
+          Writeln(DebugFile, 'MerSurusegFok', MerSurusegFok);
+          Writeln(DebugFile, 'ParSurusegFok', ParSurusegFok);
           Szinado(Ujform.FokSzinCB);
 
           if UjForm.FokChk.Checked then begin
             {hosszúsági körök}
             Tatuado(UjForm.MerReszletCB.ItemIndex);
-            loopint := 2 * trunc(180 / Delta1);
+            loopint := 2 * Trunc(180 / MerSurusegFok);
             i := 0;
 
             repeat
               Writeln(DebugFile, 'Next step: ', i);
 
               q := 0;
-              fi := 89.995;
-              la := (i - trunc(180 / Delta1)) * Delta1 + 0.01;
-              Writeln(DebugFile, i, ' ', la);
+              Fi := 89.995;
+              La := (i - Trunc(180 / MerSurusegFok)) * MerSurusegFok + 0.01;
+              Writeln(DebugFile, i, ' ', La);
 
-              if Almost(la, 0) then
+              if Almost(La, 0) then
                 Vastagado(OptionsForm.Vas3.Value)
               else
                 Vastagado(OptionsForm.Vas1.Value);
@@ -2502,23 +2543,25 @@ implementation
               repeat
                 q := q + 1;
                 if q > 2 then
-                  fi := fi - Tatu;
-                if Almost(fi, -90) then
-                  fi := -89.995;
+                  Fi := Fi - Tatu;
+                if Almost(Fi, -90) then
+                  Fi := -89.995;
 
-                if segede then
-                  seged(Arcus(fi), Arcus(la), fc, lc)
+                if Ferde then
+                  seged(Arcus(Fi), Arcus(La), Fc, Lc)
                 else begin
-                  fc := Arcus(fi);
-                  lc := Arcus(la);
+                  Fc := Arcus(Fi);
+                  Lc := Arcus(La);
                 end;
 
+                Writeln(DebugFile, 'Vizsgal1: ', Fi, ' , ', La);
+                Writeln(DebugFile, 'Vizsgal2: ', Fc, ' , ', Lc);
                 Vizsgal;
-                lca := lc;
-                fca := fc;
-              until Almost(fi,-90);
+                Lca := Lc;
+                Fca := Fc;
+              until Almost(Fi,-90);
 
-              Progpos := Progpos + 100 / Prog * 18 * Delta1 / 360;
+              Progpos := Progpos + 100 / Prog * 18 * MerSurusegFok / 360;
               ProgressForm.ProgressBar1.Position := Trunc(Progpos);
               Application.ProcessMessages;
 
@@ -2537,10 +2580,10 @@ implementation
               for i := 1 to 4 do begin
                 Vastagado(OptionsForm.Vas4.Value);
                 case i of
-                1: fi := 66.5;
-                2: fi := 23.5;
-                3: fi := -23.5;
-                4: fi := -66.5;
+                1: Fi := 66.5;
+                2: Fi := 23.5;
+                3: Fi := -23.5;
+                4: Fi := -66.5;
                 end;
                 paralelkor;
               end;
@@ -2548,8 +2591,8 @@ implementation
             CloseFile(DebugFile);
 
             {szélességi körök}
-            for i := 0 to 180 div delta2 do begin
-              if delta2 * (89 div delta2) - i * delta2 <- 89 then begin
+            for i := 0 to 180 div ParSurusegFok do begin
+              if ParSurusegFok * (89 div ParSurusegFok) - i * ParSurusegFok <- 89 then begin
                 mike := i;
                 break;
               end;
@@ -2558,8 +2601,8 @@ implementation
             for i := 0 to mike do begin
               if i = 0 then Continue;
 
-              fi := delta2 * (89 div delta2) - (i - 1) * Delta2 + 0.01;
-              if Almost(fi, 0) then
+              Fi := ParSurusegFok * (89 div ParSurusegFok) - (i - 1) * ParSurusegFok + 0.01;
+              if Almost(Fi, 0) then
                 Vastagado(OptionsForm.Vas2.Value)
               else
                 Vastagado(OptionsForm.Vas1.Value);
@@ -2581,100 +2624,100 @@ implementation
           end; // FokChk.Checked
 
           // határoló vonalak - ezeket a fokhálózat megjelenítésétõl függetlenül kirajzoljuk
-          segede := True;
+          Ferde := True;
           Vastagado(OptionsForm.Vas1.Value);
           Tatuado(UjForm.ParReszletCB.ItemIndex);
 
-          case family of
+          case Csalad of
           0 : begin
             q := 0;
-            la := 179.999+Tatu;
-            fc := Arcus(minfi+0.001);
-            fca := fc;
-            repeat la := la-Tatu;
-                   if Almost(la, -180) then la := -179.999;
-                   lc := Arcus(la);
+            La := 179.999+Tatu;
+            Fc := Arcus(minfi+0.001);
+            Fca := Fc;
+            repeat La := La-Tatu;
+                   if Almost(La, -180) then La := -179.999;
+                   Lc := Arcus(La);
                    q := q+1;
                    Vizsgal;
-                   lca := lc;
-            until Almost(la, -180);
+                   Lca := Lc;
+            until Almost(La, -180);
           end;
 
           1 : begin
             {külsõ paralel}
             q := 0;
-            la := 179.999 + Tatu;
-            fc := Arcus(minfi + 0.001);
-            fca := fc;
+            La := 179.999 + Tatu;
+            Fc := Arcus(minfi + 0.001);
+            Fca := Fc;
             repeat
-              la := la - Tatu;
-              if Almost(la, -180) then
-                la := -179.999;
+              La := La - Tatu;
+              if Almost(La, -180) then
+                La := -179.999;
 
-              lc := Arcus(la);
+              Lc := Arcus(La);
               q := q+1;
               Vizsgal;
-              lca := lc;
-            until Almost(la, -180);
+              Lca := Lc;
+            until Almost(La, -180);
 
             {határoló meridiánok}
             Tatuado(UjForm.MerReszletCB.ItemIndex);
             for i := 0 to 1 do begin
               q := 0;
-              lc := -(pi - 0.00001) + i * 2 * (pi - 0.00001);
-              lca := lc;
-              fi := 89.999 + Tatu;
+              Lc := -(Pi - 0.00001) + i * 2 * (Pi - 0.00001);
+              Lca := Lc;
+              Fi := 89.999 + Tatu;
               repeat
-                fi := fi - Tatu;
-                if Almost(fi, -90) then
-                  fi := -89.999;
-                fc := Arcus(fi);
+                Fi := Fi - Tatu;
+                if Almost(Fi, -90) then
+                  Fi := -89.999;
+                Fc := Arcus(Fi);
                 q := q + 1;
                 Vizsgal;
-                fca := fc;
-              until Almost(fi, -90);
+                Fca := Fc;
+              until Almost(Fi, -90);
             end;
 
             {pólusvonal}
             Tatuado(UjForm.ParReszletCB.ItemIndex);
-            if aktiv in [20,21,24,25] then begin
+            if AktivVetulet in [20,21,24,25] then begin
               q := 0;
-              fc := Arcus(89.999);
-              la := 179.999 + Tatu;
-              fca := fc;
+              Fc := Arcus(89.999);
+              La := 179.999 + Tatu;
+              Fca := Fc;
               repeat
-                la := la - Tatu;
-                if Almost(la, -180) then
-                  la := -179.999;
+                La := La - Tatu;
+                if Almost(La, -180) then
+                  La := -179.999;
 
-                lc := arcus(la);
+                Lc := arcus(La);
                 q := q+1;
                 Vizsgal;
-                lca := lc;
-              until Almost(la, -180);
+                Lca := Lc;
+              until Almost(La, -180);
             end;
           end;
 
           2,3,4,5 :
             begin
-              if (family in [2,4,5]) or (aktiv=69) and not (aktiv in [94,95,98,181]) then begin
+              if (Csalad in [2,4,5]) or (AktivVetulet=69) and not (AktivVetulet in [94,95,98,181]) then begin
                 {határoló szélességek}
                 Tatuado(UjForm.ParReszletCB.ItemIndex);
                 for i := 0 to 1 do begin
                   q := 0;
-                  fc := ( 2 * i - 1) * Arcus(minfi + 0.001);
-                  la := 179.999 + Tatu;
-                  fca := fc;
+                  Fc := ( 2 * i - 1) * Arcus(minfi + 0.001);
+                  La := 179.999 + Tatu;
+                  Fca := Fc;
                   repeat
-                    la := la - Tatu;
-                    if Almost(la, -180) then
-                      la := -179.999;
+                    La := La - Tatu;
+                    if Almost(La, -180) then
+                      La := -179.999;
 
-                    lc := Arcus(la);
+                    Lc := Arcus(La);
                     q := q + 1;
                     Vizsgal;
-                    lca := lc;
-                  until Almost(la, -180);
+                    Lca := Lc;
+                  until Almost(La, -180);
                 end;
               end;
 
@@ -2683,99 +2726,98 @@ implementation
               for i := 0 to 1 do begin
                 q := 0;
 
-                if aktiv = 65 then
-                  lc := (2 * i - 1) * Arcus(minfi)
-                else if (aktiv in [94,95,98]) and (fel) then
-                  lc := (2 * i - 1) * Arcus(89.999)
+                if AktivVetulet = 65 then
+                  Lc := (2 * i - 1) * Arcus(minfi)
+                else if (AktivVetulet in [94,95,98]) and (fel) then
+                  Lc := (2 * i - 1) * Arcus(89.999)
                 else
-                  lc := (2 * i - 1) * Arcus(179.999);
-                fi := 89.999 + Tatu;
-                lca := lc;
+                  Lc := (2 * i - 1) * Arcus(179.999);
+                Fi := 89.999 + Tatu;
+                Lca := Lc;
 
                 repeat
-                  fi := fi - Tatu;
-                  if Almost(fi, -90) then
-                    fi := -89.999;
-                  fc := Arcus(fi);
+                  Fi := Fi - Tatu;
+                  if Almost(Fi, -90) then
+                    Fi := -89.999;
+                  Fc := Arcus(Fi);
                   q := q+1;
                   Vizsgal;
-                  fca := fc;
-                until Almost(fi, -90);
+                  Fca := Fc;
+                until Almost(Fi, -90);
               end;
             end;
           end; // case
 
           // Armadillo
-          if ((aktiv = 107) and (fin <> 0)) then begin
+          if ((AktivVetulet = 107) and (fin <> 0)) then begin
             Tatuado(UjForm.ParReszletCB.ItemIndex);
             q := 0;
-            la := 179.999 + Tatu;
+            La := 179.999 + Tatu;
 
             repeat
-              la := la - Tatu;
-              lc := Arcus(la);
-              fc := -arctan(cos(lc / 2) / tan(betan));
+              La := La - Tatu;
+              Lc := Arcus(La);
+              Fc := -arctan(cos(Lc / 2) / tan(betan));
               q := q + 1;
 
               Vizsgal;
 
-              fca := fc;
-              lca := lc;
-            until Almost(la, -180);
+              Fca := Fc;
+              Lca := Lc;
+            until Almost(La, -180);
           end;
 
           // Goode-féle
-          if aktiv = 90 then begin
+          if AktivVetulet = 90 then begin
             for i := 1 to 8 do begin
               q := 0;
 
               case i of
-              1: lc := Arcus( -40.001);
-              2: lc := Arcus( -39.999);
-              3: lc := Arcus(-100.001);
-              4: lc := Arcus( -99.999);
-              5: lc := Arcus( -20.001);
-              6: lc := Arcus( -19.999);
-              7: lc := Arcus(  79.999);
-              8: lc := Arcus(  80.001);
+              1: Lc := Arcus( -40.001);
+              2: Lc := Arcus( -39.999);
+              3: Lc := Arcus(-100.001);
+              4: Lc := Arcus( -99.999);
+              5: Lc := Arcus( -20.001);
+              6: Lc := Arcus( -19.999);
+              7: Lc := Arcus(  79.999);
+              8: Lc := Arcus(  80.001);
               end;
 
               if i in [1,2] then
-                fi := 89.999 + Tatu
+                Fi := 89.999 + Tatu
               else
-                fi := 0;
+                Fi := 0;
 
-              lca := lc;
+              Lca := Lc;
 
               repeat
-                fi := fi - Tatu;
-                if Almost(fi, 0) then
-                  fi := 0;
-                if Almost(fi, -90) then
-                  fi := -89.999;
+                Fi := Fi - Tatu;
+                if Almost(Fi, 0) then
+                  Fi := 0;
+                if Almost(Fi, -90) then
+                  Fi := -89.999;
 
-                fc := Arcus(fi);
+                Fc := Arcus(Fi);
                 q := q + 1;
                 Vizsgal;
-                fca := fc;
+                Fca := Fc;
 
-                if (i in [1,2]) and (Almost(fi, 0)) then
-                  fi := -90;
-              until Almost(fi,-90);
+                if (i in [1,2]) and (Almost(Fi, 0)) then
+                  Fi := -90;
+              until Almost(Fi,-90);
             end;
 
-            segede := Ujform.FerdeBtn.Checked;
+            Ferde := Ujform.FerdeBtn.Checked;
             Application.ProcessMessages;
 
             if Megse then begin
               ProgressForm.Close;
               Exit;
             end;
-
-            Szeles.Text := FloatToStr(Atszamit(3, Egyseg.Itemindex, Jobbtop - Baltop));
-            Magas.Text  := FloatToStr(Atszamit(3, Egyseg.Itemindex, Fenntop - Lenntop));
           end;
 
+          SzelesEd.Text := FloatToStr(Atszamit(3, EgysegCB.Itemindex, Jobbtop - Baltop));
+          MagasEd.Text  := FloatToStr(Atszamit(3, EgysegCB.Itemindex, Fenntop - Lenntop));
         end;
 
         SetCurrentDir(Alapdir);
@@ -2839,32 +2881,34 @@ implementation
 
       end; // for
 
-      {Ábra megvaltoztatása}
+      { Ábra megvaltoztatása }
       Abra.Width := AWidth;
       Abra.Height := AHeight;
-      Scr.x := Scrollbox1.Width;
-      Scr.y := Scrollbox1.Height;
+
+      SBMeret.x := ScrollBox1.Width;
+      SBMeret.y := ScrollBox1.Height;
 
       if Sajt2 then begin
-        Scrollbox1.HorzScrollBar.Position := Trunc(Abra.Width/SBHelyx*Zoom.x-Scrollbox1.Width/2);
-        Scrollbox1.VertScrollBar.Position := Trunc(Abra.Height/SBHelyy*Zoom.y-Scrollbox1.Height/2);
+        ScrollBox1.HorzScrollBar.Position := Trunc(Abra.Width / SBHelyx * Zoom.x - ScrollBox1.Width / 2);
+        ScrollBox1.VertScrollBar.Position := Trunc(Abra.Height / SBHelyy * Zoom.y - ScrollBox1.Height / 2);
       end;
       if Zoomol or Lupe2 then begin
-        Scrollbox1.HorzScrollBar.Position := Trunc(Etna/Etna2*Zoom.x-Scrollbox1.Width/2);
-        Scrollbox1.VertScrollBar.Position := Trunc(Etna/Etna2*Zoom.y-Scrollbox1.Height/2);
+        ScrollBox1.HorzScrollBar.Position := Trunc(Etna / Etna2 * Zoom.x - ScrollBox1.Width / 2);
+        ScrollBox1.VertScrollBar.Position := Trunc(Etna / Etna2 * Zoom.y - ScrollBox1.Height / 2);
       end;
       if (not Zoomol and not Lupe2 and not Sajt2 and not Vetvalt) or Sajt3 then begin
         if SBHelyX = 0 then
-          Scrollbox1.HorzScrollBar.Position := trunc((Scrollbox1.HorzScrollBar.Range-Scrollbox1.Width) / 2)
+          ScrollBox1.HorzScrollBar.Position := Trunc((ScrollBox1.HorzScrollBar.Range - ScrollBox1.Width) / 2)
         else
-          Scrollbox1.HorzScrollBar.Position := SBHelyX;
+          ScrollBox1.HorzScrollBar.Position := SBHelyX;
 
         if SBHelyY = 0 then
-          Scrollbox1.VertScrollbar.Position := trunc((Scrollbox1.VertScrollbar.Range-Scrollbox1.Height) / 2)
+          ScrollBox1.VertScrollbar.Position := Trunc((ScrollBox1.VertScrollbar.Range - ScrollBox1.Height) / 2)
         else
-          Scrollbox1.VertScrollbar.Position := SBHelyY;
+          ScrollBox1.VertScrollbar.Position := SBHelyY;
       end;
-      if not Plt and not nyom then
+
+      if Mode = DRAWMODE then
         Abra.Picture.Graphic := Bitmap;
 
       if not OptionsForm.Kozepigazit.Checked then
@@ -2885,7 +2929,7 @@ implementation
       ProgressForm.Close;
 
       Plusz := 'vetület';
-      case aktiv of
+      case AktivVetulet of
       0..4 : Plusz := 'valós síkvetület';
       20..39 : Plusz := 'valós kúpvetület';
       40..59 : Plusz := 'valós hengervetület';
@@ -2893,26 +2937,26 @@ implementation
       66..67,70,81..84,86..88,91,92,94,99,180,104,181 : Plusz := 'vetülete';
       end;
 
-      StatusBar1.Panels[2].Text := Vet[aktiv] + ' ' + Plusz;
-      if segede then
-        StatusBar1.Panels[3].Text := 'Segédpólus: ' + UjForm.PolusSzelesFok.Text + ' fok szélesség, ' +
-                                     UjForm.PolusHosszuFok.Text + ' fok hosszúság'
+      StatusBar1.Panels[2].Text := Vet[AktivVetulet] + ' ' + Plusz;
+      if Ferde then
+        StatusBar1.Panels[3].Text := 'Segédpólus: ' + UjForm.PolusSzelesFokEd.Text + ' fok szélesség, ' +
+                                     UjForm.PolusHosszuFokEd.Text + ' fok hosszúság'
       else
         StatusBar1.Panels[3].Text := ' ';
     EXCEPT
       ProgressForm.Close;
       MessageDlg('Az ábra megrajzolása nem sikerült.', mtError, [mbOK], 0);
     END;
-  end; // procedure FrissitClick
+  end; // procedure Frissites
 
-  procedure TMainForm.NagyitChange(Sender: TObject);
+  procedure TMainForm.NagyitasCBChange(Sender: TObject);
   begin
     Zoomol := False;
     Lupe := True;
     Lupe2 := True;
-    zoom.x := Scrollbox1.HorzScrollBar.Position+trunc(Scrollbox1.Width/2);
-    zoom.y := Scrollbox1.VertScrollBar.Position+trunc(Scrollbox1.Height/2);
-    if Nagyit.Itemindex=7 then
+    zoom.x := ScrollBox1.HorzScrollBar.Position+Trunc(ScrollBox1.Width/2);
+    zoom.y := ScrollBox1.VertScrollBar.Position+Trunc(ScrollBox1.Height/2);
+    if NagyitasCB.Itemindex=7 then
                             begin
                              Lupe := False;
                              Lupe2 := False;
@@ -2922,49 +2966,44 @@ implementation
 
   procedure TMainForm.MentesClick(Sender: TObject);
   var
-    i: byte;
+    JpgImg : TJPegImage;
   begin
-    if (SaveDialog1.FileName[Length(SaveDialog1.FileName)-3]='.')
-    and (Length(SaveDialog1.FileName)>5)
-    then SaveDialog1.FileName := Copy(SaveDialog1.FileName,1,Length(SaveDialog1.FileName)-4);
-    if SaveDialog1.Execute then
-    begin
+    if (SaveDialog1.FileName[Length(SaveDialog1.FileName) - 3] = '.') and (Length(SaveDialog1.FileName) > 5) then
+      SaveDialog1.FileName := Copy(SaveDialog1.FileName, 1, Length(SaveDialog1.FileName) - 4);
+
+    if SaveDialog1.Execute then begin
       SaveDialog1.InitialDir := ExtractFilePath(SaveDialog1.FileName);
-      if FileExists(SaveDialog1.FileName) then
-        if MessageDlg(Format('%s már létezik. Felülírja?', [SaveDialog1.FileName]),
-          mtConfirmation, mbYesNoCancel, 0) <> idYes then Exit;
-      if SaveDialog1.FilterIndex=3 then
-      begin
-        jp := TJPegImage.Create;
+      if FileExists(SaveDialog1.FileName) then begin
+        if MessageDlg(Format('%s már létezik. Felülírja?', [SaveDialog1.FileName]), mtConfirmation, mbYesNoCancel, 0) <> idYes then
+          Exit;
+      end;
+
+      if SaveDialog1.FilterIndex = 3 then begin
+        JpgImg := TJPegImage.Create;
         TRY TRY
-         jp.Assign(Abra.Picture.Graphic);
-         if Abra.Picture.Graphic<>nil then jp.SaveToFile(SaveDialog1.FileName);
+          JpgImg.Assign(Abra.Picture.Graphic);
+          if Abra.Picture.Graphic <> nil then
+            JpgImg.SaveToFile(SaveDialog1.FileName);
         EXCEPT
-         MessageDlg('Az elmentés nem sikerült.',mtConfirmation,[mbOK],0);
+          MessageDlg('Az elmentés nem sikerült.',mtConfirmation,[mbOK],0);
         END;
         FINALLY
-         jp.Free;
-        END; 
-      end
-      else
-      if SaveDialog1.FilterIndex=2 then
-      begin
-       if Abra.Picture.Graphic<>nil then
-         Abra.Picture.SaveToFile(SaveDialog1.FileName);
-      end
-      else
-      begin
-       AssignFile(Filesv,SaveDialog1.FileName);
-       Rewrite(Filesv);
-       Plt := True;
-       Writeln(Filesv,'in;');
-       Writeln(Filesv,'ip0 0 ',trunc(Lx),' ',trunc(Ly),';');
-       Writeln(Filesv,'sc',-trunc(Lx/2),' ',trunc(Lx/2),' ',
-         -trunc(Ly/2),' ',trunc(Ly/2),';');
-       Writeln(Filesv,'sp1;');
-       FrissitClick(Mentes);
-       CloseFile(Filesv);
-       Plt := False;
+          JpgImg.Free;
+        END;
+      end else if SaveDialog1.FilterIndex = 2 then begin
+        if Abra.Picture.Graphic <> nil then
+          Abra.Picture.SaveToFile(SaveDialog1.FileName);
+      end else begin
+        AssignFile(Filesv, SaveDialog1.FileName);
+        Rewrite(Filesv);
+        Writeln(Filesv, 'in;');
+        Writeln(Filesv, 'ip0 0 ', Trunc(Lx), ' ', Trunc(Ly), ';');
+        Writeln(Filesv, 'sc', -Trunc(Lx/2), ' ', Trunc(Lx/2), ' ', -Trunc(Ly/2), ' ', Trunc(Ly/2), ';');
+        Writeln(Filesv, 'sp1;');
+
+        Frissites(PLTMODE);
+
+        CloseFile(Filesv);
       end;
     end;
   end;
@@ -2986,20 +3025,20 @@ implementation
     PageForm.Showmodal;
   end;
 
-  procedure TMainForm.EgysegChange(Sender: TObject);
+  procedure TMainForm.EgysegCBChange(Sender: TObject);
   var i: Byte;
   begin
      i := PageForm.PapirCombobox.Itemindex;
      Valt := True;
-     Eta := Egyseg.Itemindex;
-     Minmargo := Atszamit(3,Eta,Minmargomi);
+     Eta := EgysegCB.Itemindex;
+     Minmargo := Atszamit(3, Eta, Minmargomi);
      OptionsForm.LegalabbEdit.Text := Format('%-2.4g ',[Minmargo])+SI[Eta];
      PageForm.PapirszelesEdit.Text := Format('%-2.7g ',
        [Lapx[i,Eta]])+SI[Eta];
      PageForm.PapirmagasEdit.Text := Format('%-2.7g ',
        [Lapy[i,Eta]])+SI[Eta];
-     Szeles.Text := FloatToStr(Atszamit(3,Egyseg.Itemindex,Jobbtop-Baltop));
-     Magas.Text := FloatToStr(Atszamit(3,Egyseg.Itemindex,Fenntop-Lenntop));
+     SzelesEd.Text := FloatToStr(Atszamit(3, EgysegCB.Itemindex, Jobbtop - Baltop));
+     MagasEd.Text := FloatToStr(Atszamit(3, EgysegCB.Itemindex, Fenntop - Lenntop));
      if PageForm.Allobtn.Checked then
          begin
             MainForm.Lapszeles.Text := Format('%-2.6g ',[Lapy[i,Eta]]);
@@ -3019,46 +3058,42 @@ implementation
     if Eszkoztare.Checked=False then
      begin
        Meretezo.Top := Meretezo.Top-28;
-       Scrollbox1.Top := Scrollbox1.Top-28;
-       Scrollbox1.Height := Scrollbox1.Height+28;
+       ScrollBox1.Top := ScrollBox1.Top-28;
+       ScrollBox1.Height := ScrollBox1.Height+28;
      end
     else
      begin
        Meretezo.Top := Meretezo.Top+28;
-       Scrollbox1.Height := Scrollbox1.Height-28;
-       Scrollbox1.Top := Scrollbox1.Top+28;
+       ScrollBox1.Height := ScrollBox1.Height-28;
+       ScrollBox1.Top := ScrollBox1.Top+28;
      end;
   end;
 
-  procedure TMainForm.NagyitKeyPress(Sender: TObject; var Key: Char);
+  procedure TMainForm.NagyitasCBKeyPress(Sender: TObject; var Key: Char);
   begin
-   if Key=#27 then
-    begin
+   if Key = #27 then begin // ESC
      Edit1.TabStop := True;
      Edit1.SetFocus;
-    end
-   else
-    if not (Key in ['0'..'9',#8]) then Key := #0;
+   end else
+     if not (Key in ['0'..'9',#8]) then
+       Key := #0;
   end;
 
-  procedure TMainForm.MeretaranyKeyPress(Sender: TObject; var Key: Char);
+  procedure TMainForm.MeretaranyEdKeyPress(Sender: TObject; var Key: Char);
   begin
-   if Key=#27 then
-    begin
+   if Key=#27 then begin // ESC
      Edit1.TabStop := True;
      Edit1.SetFocus;
-    end
-   else
-    if not (Key in ['0'..'9',#8]) then Key := #0
-     else
-      begin
-       Sajt := True;
-       Sajt2 := True;
-       zoom.x := Scrollbox1.HorzScrollBar.Position+trunc(Scrollbox1.Width/2);
-       zoom.y := Scrollbox1.VertScrollBar.Position+trunc(Scrollbox1.Height/2);
-       SBHelyx := Abra.Width;
-       SBHelyy := Abra.Height;
-      end;
+   end else if not (Key in ['0'..'9',#8]) then
+     Key := #0
+   else begin
+     Sajt := True;
+     Sajt2 := True;
+     zoom.x := ScrollBox1.HorzScrollBar.Position + Trunc(ScrollBox1.Width/2);
+     zoom.y := ScrollBox1.VertScrollBar.Position + Trunc(ScrollBox1.Height/2);
+     SBHelyx := Abra.Width;
+     SBHelyy := Abra.Height;
+    end;
   end;
 
   procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -3111,7 +3146,7 @@ implementation
            IniFile.WriteString('Meretezes','Margo1',OptionsForm.SzazalekEdit.Text);
            IniFile.WriteString('Meretezes','Margo2',OptionsForm.LegalabbEdit.Text);
            IniFile.WriteInteger('Meretezes','Kerekites',OptionsForm.KerekCombobox.Itemindex);
-           IniFile.WriteInteger('Egyseg','Egyseg',Egyseg.Itemindex);
+           IniFile.WriteInteger('Egyseg','Egyseg',EgysegCB.Itemindex);
           end;
         IniFile.Destroy;
         CanClose := True;
@@ -3125,11 +3160,11 @@ implementation
    begin
     Eszkoztar.Width := Width-8;
     Meretezo.Width := Width-8;
-    Scrollbox1.Width := Width-6;
-    if Eszkoztare.Checked then Scrollbox1.Height := ClientHeight-25
-                          else Scrollbox1.Height := ClientHeight;
-    if Meretezoe.Checked then Scrollbox1.Height := Scrollbox1.Height-25;
-    if Statuszsore.Checked then Scrollbox1.Height := Scrollbox1.Height-25;
+    ScrollBox1.Width := Width-6;
+    if Eszkoztare.Checked then ScrollBox1.Height := ClientHeight-25
+                          else ScrollBox1.Height := ClientHeight;
+    if Meretezoe.Checked then ScrollBox1.Height := ScrollBox1.Height-25;
+    if Statuszsore.Checked then ScrollBox1.Height := ScrollBox1.Height-25;
     StatusBar2.Top := StatusBar1.Top;
     StatusBar2.Height := StatusBar1.Height;
     StatusBar3.Top := StatusBar1.Top;
@@ -3140,25 +3175,25 @@ implementation
 
   procedure TMainForm.NagyitBtnClick(Sender: TObject);
   begin
-    ifmarvan(Abra.Canvas);
+    MeresTorles(Abra.Canvas);
     Abra.Cursor := crZoomin;
-    Mer := False;
+    TavolsagMeres := False;
     StatusBar3.Visible := False;
   end;
 
   procedure TMainForm.KicsinyitBtnClick(Sender: TObject);
   begin
-    ifmarvan(Abra.Canvas);
+    MeresTorles(Abra.Canvas);
     Abra.Cursor := crZoomout;
-    Mer := False;
+    TavolsagMeres := False;
     StatusBar3.Visible := False;
   end;
 
   procedure TMainForm.VagBtnClick(Sender: TObject);
   begin
-    ifmarvan(Abra.Canvas);
+    MeresTorles(Abra.Canvas);
     Abra.Cursor := crCrop;
-    Mer := False;
+    TavolsagMeres := False;
     StatusBar3.Visible := False;
   end;
 
@@ -3209,13 +3244,13 @@ implementation
     if Meretezoe.Checked=False
     then
        begin
-       Scrollbox1.Top := Scrollbox1.Top-28;
-       Scrollbox1.Height := Scrollbox1.Height+28;
+       ScrollBox1.Top := ScrollBox1.Top-28;
+       ScrollBox1.Height := ScrollBox1.Height+28;
      end
     else
      begin
-       Scrollbox1.Height := Scrollbox1.Height-28;
-       Scrollbox1.Top := Scrollbox1.Top+28;
+       ScrollBox1.Height := ScrollBox1.Height-28;
+       ScrollBox1.Top := ScrollBox1.Top+28;
      end;
   end;
 
@@ -3225,49 +3260,47 @@ implementation
   end;
 
   procedure TMainForm.NyomtatClick(Sender: TObject);
-  var u:Byte;
+  var U : Byte;
   begin
-    Nyom := True;
-    if PrintDialog1.Execute then
-      for u := 1 to PrintDialog1.Copies do
-       begin
-         Printer.BeginDoc;
-         TRY
-           FrissitClick(Nyomtat);
-           Printer.EndDoc;
-         EXCEPT
-           Printer.Abort;
-           Raise;
-         END
-       end;
-    Nyom := False;
+    if PrintDialog1.Execute then begin
+      for U := 1 to PrintDialog1.Copies do begin
+        Printer.BeginDoc;
+        TRY
+          Frissites(PRINTMODE);
+          Printer.EndDoc;
+        EXCEPT
+          Printer.Abort;
+          Raise;
+        END
+      end;
+    end;
   end;
 
-  procedure TMainForm.EgysegEnter(Sender: TObject);
+  procedure TMainForm.EgysegCBEnter(Sender: TObject);
   begin
-    Egyseg.TabStop := True;
-    Meretarany.TabStop := True;
-    Nagyit.TabStop := True;
+    EgysegCB.TabStop := True;
+    MeretaranyEd.TabStop := True;
+    NagyitasCB.TabStop := True;
     Edit1.TabStop := False;
   end;
 
-  procedure TMainForm.MeretaranyEnter(Sender: TObject);
+  procedure TMainForm.MeretaranyEdEnter(Sender: TObject);
   begin
-    Egyseg.TabStop := True;
-    Meretarany.TabStop := True;
-    Nagyit.TabStop := True;
+    EgysegCB.TabStop := True;
+    MeretaranyEd.TabStop := True;
+    NagyitasCB.TabStop := True;
     Edit1.TabStop := False;
   end;
 
-  procedure TMainForm.NagyitEnter(Sender: TObject);
+  procedure TMainForm.NagyitasCBEnter(Sender: TObject);
   begin
-    Egyseg.TabStop := True;
-    Meretarany.TabStop := True;
-    Nagyit.TabStop := True;
+    EgysegCB.TabStop := True;
+    MeretaranyEd.TabStop := True;
+    NagyitasCB.TabStop := True;
     Edit1.TabStop := False;
   end;
 
-  procedure TMainForm.EgysegKeyPress(Sender: TObject; var Key: Char);
+  procedure TMainForm.EgysegCBKeyPress(Sender: TObject; var Key: Char);
   begin
    if Key=#27 then
     begin
@@ -3280,15 +3313,15 @@ implementation
   procedure TMainForm.Edit1KeyPress(Sender: TObject; var Key: Char);
   begin
     Key := #0;
-    ifmarvan(Abra.Canvas);
+    MeresTorles(Abra.Canvas);
   end;
 
   procedure TMainForm.MozgatBtnClick(Sender: TObject);
   begin
-    ifmarvan(Abra.Canvas);
+    MeresTorles(Abra.Canvas);
     StatusBar3.Visible := False;
     Abra.Cursor := crMove;
-    Mer := False;
+    TavolsagMeres := False;
   end;
 
   procedure TMainForm.KozepreBtnClick(Sender: TObject);
@@ -3301,34 +3334,36 @@ implementation
   procedure TMainForm.TavolsagBtnClick(Sender: TObject);
   begin
     Abra.Cursor := crMove;
-    Mer := True;
+    TavolsagMeres := True;
   end;
 
   procedure TMainForm.Timer1Timer(Sender: TObject);
   begin
-    most2.x := Left;
-    most2.y := Top;
+    // A Beállítások form kövesse a fõképernyõt
+    FormPos2.x := Left;
+    FormPos2.y := Top;
 
-    UjForm.Top := UjForm.Top + most2.y - most1.y;
-    UjForm.Left := UjForm.Left + most2.x - most1.x;
+    UjForm.Top := UjForm.Top + FormPos2.y - FormPos1.y;
+    UjForm.Left := UjForm.Left + FormPos2.x - FormPos1.x;
 
     if UjForm.Top < 2 then
       UjForm.Top := 2;
     if UjForm.Left < 2 then
       UjForm.Left := 2;
 
-    most1.x := Left;
-    most1.y := Top;
+    FormPos1.x := Left;
+    FormPos1.y := Top;
 
+    // Scrollbar mozgatása
     if ActiveControl = Edit1 then begin
-      if SBMozog1 then
-        Scrollbox1.VertScrollBar.Position := Scrollbox1.VertScrollBar.Position - 8;
-      if SBMozog2 then
-        Scrollbox1.VertScrollBar.Position := Scrollbox1.VertScrollBar.Position + 8;
-      if SBMozog3 then
-        Scrollbox1.HorzScrollBar.Position := Scrollbox1.HorzScrollBar.Position - 8;
-      if SBMozog4 then
-        Scrollbox1.HorzScrollBar.Position := Scrollbox1.HorzScrollBar.Position + 8;
+      if SBFel then
+        ScrollBox1.VertScrollBar.Position := ScrollBox1.VertScrollBar.Position - 8;
+      if SBLe then
+        ScrollBox1.VertScrollBar.Position := ScrollBox1.VertScrollBar.Position + 8;
+      if SBBalra then
+        ScrollBox1.HorzScrollBar.Position := ScrollBox1.HorzScrollBar.Position - 8;
+      if SBJobbra then
+        ScrollBox1.HorzScrollBar.Position := ScrollBox1.HorzScrollBar.Position + 8;
     end;
   end;
 
