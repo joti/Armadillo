@@ -256,7 +256,7 @@ implementation
       Canvas.Moveto(Zoom.X + 7, Zoom.Y - 7);
       Canvas.Lineto(Zoom.X - 7, Zoom.Y + 7);
 
-      Canvas.Moveto(Zoom.x,Zoom.y);
+      Canvas.Moveto(Zoom.X,Zoom.y);
       Canvas.Lineto(veg.X,veg.Y);
     end;
     VanMeres := False;
@@ -322,91 +322,91 @@ implementation
   procedure TMainForm.AbraMouseDown(Sender: TObject; Button: TMouseButton;
     Shift: TShiftState; X, Y: Integer);
   begin
-   if Button=mbLeft then begin
-    case Abra.Cursor of
-    crMove2:
-     begin
-       Abra.Cursor := crDefault;
-       masik.X := ValosX(X);
-       masik.Y := ValosY(Y);
-       origomas := True;
-       OMoveX := OMoveX-masik.x+egyik.x;
-       OMoveY := OMoveY-masik.y+egyik.y;
-       KozepreBtn.Enabled := True;
-       FrissitClick(MozgatBtn);
-     end;
-    crMove:
-     begin
-      if TavolsagMeres then
-      begin
-        Abra.Canvas.Pen.Mode := pmNotXor;
-        Abra.Canvas.Pen.Color := clBlack;
-        if VanMeres then
+    if Button = mbLeft then begin
+      case Abra.Cursor of
+      crMove2:
         begin
-          StatusBar3.Visible := False;
-          MeresTorles(Abra.Canvas);
+          Abra.Cursor := crDefault;
+          masik.X := ValosX(X);
+          masik.Y := ValosY(Y);
+          origomas := True;
+          OMoveX := OMoveX-masik.x+egyik.x;
+          OMoveY := OMoveY-masik.y+egyik.y;
+          KozepreBtn.Enabled := True;
+          FrissitClick(MozgatBtn);
         end;
-        Zoom.x := KisXKorr(X);
-        Zoom.Y := KisYKorr(Y);
-        veg.x := KisXKorr(X);
-        veg.Y := KisYKorr(Y);
-        Abra.Canvas.Moveto(veg.X-7,veg.Y-7);
-        Abra.Canvas.Lineto(veg.X+7,veg.Y+7);
-        Abra.Canvas.Moveto(veg.X+7,veg.Y-7);
-        Abra.Canvas.Lineto(veg.X-7,veg.Y+7);
-      end
+      crMove:
+        begin
+          if TavolsagMeres then begin
+            Abra.Canvas.Pen.Mode := pmNotXor;
+            Abra.Canvas.Pen.Color := clBlack;
+
+            if VanMeres then begin
+              StatusBar3.Visible := False;
+              MeresTorles(Abra.Canvas);
+            end;
+            Zoom.X := KisXKorr(X);
+            Zoom.Y := KisYKorr(Y);
+            veg.x := KisXKorr(X);
+            veg.Y := KisYKorr(Y);
+
+            Abra.Canvas.Moveto(veg.X-7,veg.Y-7);
+            Abra.Canvas.Lineto(veg.X+7,veg.Y+7);
+            Abra.Canvas.Moveto(veg.X+7,veg.Y-7);
+            Abra.Canvas.Lineto(veg.X-7,veg.Y+7);
+          end else begin
+            egyik.x := ValosX(X);
+            egyik.y := ValosY(Y);
+
+            Abra.Cursor := crMove2;
+            Abra.Canvas.Moveto(KisXKorr(X)-5,KisYKorr(Y)-5);
+            Abra.Canvas.Lineto(KisXKorr(X)+5,KisYKorr(Y)+5);
+            Abra.Canvas.Moveto(KisXKorr(X)+5,KisYKorr(Y)-5);
+            Abra.Canvas.Lineto(KisXKorr(X)-5,KisYKorr(Y)+5);
+          end;
+        end;
+      crZoomout:
+        begin
+          Lupe := True;
+          Etna2 := Etna;
+          Zoom.X := X;
+          Zoom.y := Y;
+          Etna := Trunc(Etna/2);
+          Abra.Cursor := crDefault;
+          Zoomol := True;
+          FrissitClick(KicsinyitBtn);
+          Exit;
+        end;
+      crZoomin,crCrop:
+        begin
+          Rajzol := True;
+          Etna2 := Etna;
+          Zoom.X := X;
+          Zoom.y := Y;
+          Zoomshape.Top := Y-ScrollBox1.VertScrollBar.Position;
+          Zoomshape.Left := X-ScrollBox1.HorzScrollBar.Position;
+          Zoomshape.Width := 1;
+          Zoomshape.Height := 1;
+        end
       else
-      begin
-       Abra.Cursor := crMove2;
-       egyik.x := ValosX(X);
-       egyik.y := ValosY(Y);
-       Abra.Canvas.Moveto(KisXKorr(X)-5,KisYKorr(Y)-5);
-       Abra.Canvas.Lineto(KisXKorr(X)+5,KisYKorr(Y)+5);
-       Abra.Canvas.Moveto(KisXKorr(X)+5,KisYKorr(Y)-5);
-       Abra.Canvas.Lineto(KisXKorr(X)-5,KisYKorr(Y)+5);
+        if not Elso then begin
+          Abra.Canvas.Pen.Mode := pmCopy;
+          SetCursor(Screen.Cursors[crCeruza]);
+
+          if ssCtrl in Shift then begin
+            Zoom.X := KisXKorr(X);
+            Zoom.Y := KisYKorr(Y);
+            veg.x := KisXKorr(X);
+            veg.Y := KisYKorr(Y);
+            Egyenes := True;
+          end else if ssShift in Shift then
+            SetCursor(Screen.Cursors[crRadir]);
+
+          Abra.Canvas.Moveto(KisXKorr(x),KisYKorr(y));
+          Rajzol := True;
+        end;
       end;
-     end;
-    crZoomout:
-     begin
-      Lupe := True;
-      Etna2 := Etna;
-      Zoom.x := X;
-      Zoom.y := Y;
-      Etna := Trunc(Etna/2);
-      Abra.Cursor := crDefault;
-      Zoomol := True;
-      FrissitClick(KicsinyitBtn);
-      Exit;
-     end;
-    crZoomin,crCrop:
-     begin
-      Rajzol := True;
-      Etna2 := Etna;
-      Zoom.x := X;
-      Zoom.y := Y;
-      Zoomshape.Top := Y-ScrollBox1.VertScrollBar.Position;
-      Zoomshape.Left := X-ScrollBox1.HorzScrollBar.Position;
-      Zoomshape.Width := 1;
-      Zoomshape.Height := 1;
-     end
-    else if not Elso then
-     begin
-      Abra.Canvas.Pen.Mode := pmCopy;
-      SetCursor(Screen.Cursors[crCeruza]);
-      if ssCtrl in Shift then
-       begin
-        Zoom.x := KisXKorr(X);
-        Zoom.Y := KisYKorr(Y);
-        veg.x := KisXKorr(X);
-        veg.Y := KisYKorr(Y);
-        Egyenes := True;
-       end
-      else if ssShift in Shift then SetCursor(Screen.Cursors[crRadir]);
-      Abra.Canvas.Moveto(KisXKorr(x),KisYKorr(y));
-      Rajzol := True;
-     end;
     end;
-   end;
   end;
 
   procedure TMainForm.AbraMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -417,13 +417,13 @@ implementation
     if ssLeft in Shift then begin
       if (Abra.Cursor = crZoomin) or (Abra.Cursor = crCrop) then begin
         if Rajzol then begin
-          Zoomshape.Width := Abs(X - Zoom.x);
+          Zoomshape.Width := Abs(X - Zoom.X);
           Zoomshape.Height := Abs(Y - Zoom.y);
           Zoomshape.Visible := True;
 
           if Y < Zoom.y then
             Zoomshape.Top := Y - ScrollBox1.VertScrollBar.Position;
-          if X < Zoom.x then
+          if X < Zoom.X then
             Zoomshape.Left := X - ScrollBox1.HorzScrollBar.Position;
 
           GetCursorPos(Curpos);
@@ -455,13 +455,13 @@ implementation
         if Abra.Cursor = crMove then begin
           Abra.Canvas.Pen.Mode := pmNotXor;
 
-          Abra.Canvas.Moveto(Zoom.x,Zoom.y);
+          Abra.Canvas.Moveto(Zoom.X,Zoom.y);
           Abra.Canvas.Lineto(veg.x,veg.y);
 
           veg.x := KisXKorr(X);
           veg.y := KisYKorr(y);
 
-          Abra.Canvas.Moveto(Zoom.x,Zoom.y);
+          Abra.Canvas.Moveto(Zoom.X,Zoom.y);
           Abra.Canvas.Lineto(veg.x, veg.y);
         end else if Rajzol then begin
           if ssShift in Shift then begin
@@ -495,10 +495,10 @@ implementation
             if Egyenes then begin
               Abra.Canvas.Pen.Mode := pmNotXor;
 
-              Abra.Canvas.Moveto(Zoom.x,Zoom.y);
+              Abra.Canvas.Moveto(Zoom.X,Zoom.y);
               Abra.Canvas.Lineto(veg.x,veg.y);
 
-              Abra.Canvas.Moveto(Zoom.x,Zoom.y);
+              Abra.Canvas.Moveto(Zoom.X,Zoom.y);
             end;
             veg.x := KisXKorr(X);
             veg.y := KisYKorr(Y);
@@ -521,11 +521,11 @@ implementation
     if Button = mbLeft then begin
       Rajzol := False;
       if Egyenes then begin
-        Abra.Canvas.Moveto(Zoom.x, Zoom.y);
+        Abra.Canvas.Moveto(Zoom.X, Zoom.y);
         Abra.Canvas.Lineto(veg.x, veg.y);
 
         Abra.Canvas.Pen.Mode := pmCopy;
-        Abra.Canvas.Moveto(Zoom.x, Zoom.y);
+        Abra.Canvas.Moveto(Zoom.X, Zoom.y);
         Abra.Canvas.Lineto(X, Y);
       end;
       Egyenes := False;
@@ -555,9 +555,9 @@ implementation
           end;
 
           if Bitmap.Width > ScrollBox1.Width - 5 then
-            Zoom.x := ScrollBox1.HorzScrollBar.Position + Zoomshape.Left + Trunc(Zoomshape.Width / 2)
+            Zoom.X := ScrollBox1.HorzScrollBar.Position + Zoomshape.Left + Trunc(Zoomshape.Width / 2)
           else
-            Zoom.x := Zoomshape.Left + Trunc(Zoomshape.Width / 2) - Trunc((ScrollBox1.Width - Bitmap.Width) / 2);
+            Zoom.X := Zoomshape.Left + Trunc(Zoomshape.Width / 2) - Trunc((ScrollBox1.Width - Bitmap.Width) / 2);
 
           if Bitmap.Height > ScrollBox1.Height - 5 then
             Zoom.y := ScrollBox1.VertScrollBar.Position + Zoomshape.Top + Trunc(Zoomshape.Height / 2)
@@ -571,8 +571,8 @@ implementation
             TeljesBtn.Enabled := True;
             CropScrollHorz := ScrollBox1.HorzScrollBar.Position;
             CropScrollVert := ScrollBox1.VertScrollBar.Position;
-            Baltop  := ValosX(Zoom.x - Zoomshape.Width div 2) + OMoveX;
-            Jobbtop := ValosX(Zoom.x + Zoomshape.Width div 2) + OMoveX;
+            Baltop  := ValosX(Zoom.X - Zoomshape.Width div 2) + OMoveX;
+            Jobbtop := ValosX(Zoom.X + Zoomshape.Width div 2) + OMoveX;
             Lenntop := ValosY(Zoom.y + Zoomshape.Height div 2) + OMoveY;
             Fenntop := ValosY(Zoom.y - Zoomshape.Height div 2) + OMoveY;
           end;
@@ -586,10 +586,10 @@ implementation
         Zoomol := False;
         Exit;
       end else if Abra.Cursor = crMove then begin
-        Abra.Canvas.Moveto(Zoom.x, Zoom.y);
+        Abra.Canvas.Moveto(Zoom.X, Zoom.y);
         Abra.Canvas.Lineto(veg.x, veg.y);
 
-        Abra.Canvas.Moveto(Zoom.x, Zoom.y);
+        Abra.Canvas.Moveto(Zoom.X, Zoom.y);
         Abra.Canvas.Lineto(KisXKorr(X), KisYKorr(Y));
 
         Abra.Canvas.Moveto(KisXKorr(X) - 7, KisYKorr(Y) - 7);
@@ -2889,11 +2889,11 @@ implementation
       SBMeret.y := ScrollBox1.Height;
 
       if Sajt2 then begin
-        ScrollBox1.HorzScrollBar.Position := Trunc(Abra.Width / SBHelyx * Zoom.x - ScrollBox1.Width / 2);
+        ScrollBox1.HorzScrollBar.Position := Trunc(Abra.Width / SBHelyx * Zoom.X - ScrollBox1.Width / 2);
         ScrollBox1.VertScrollBar.Position := Trunc(Abra.Height / SBHelyy * Zoom.y - ScrollBox1.Height / 2);
       end;
       if Zoomol or Lupe2 then begin
-        ScrollBox1.HorzScrollBar.Position := Trunc(Etna / Etna2 * Zoom.x - ScrollBox1.Width / 2);
+        ScrollBox1.HorzScrollBar.Position := Trunc(Etna / Etna2 * Zoom.X - ScrollBox1.Width / 2);
         ScrollBox1.VertScrollBar.Position := Trunc(Etna / Etna2 * Zoom.y - ScrollBox1.Height / 2);
       end;
       if (not Zoomol and not Lupe2 and not Sajt2 and not Vetvalt) or Sajt3 then begin
@@ -2954,7 +2954,7 @@ implementation
     Zoomol := False;
     Lupe := True;
     Lupe2 := True;
-    zoom.x := ScrollBox1.HorzScrollBar.Position+Trunc(ScrollBox1.Width/2);
+    Zoom.X := ScrollBox1.HorzScrollBar.Position+Trunc(ScrollBox1.Width/2);
     zoom.y := ScrollBox1.VertScrollBar.Position+Trunc(ScrollBox1.Height/2);
     if NagyitasCB.Itemindex=7 then
                             begin
@@ -3089,7 +3089,7 @@ implementation
    else begin
      Sajt := True;
      Sajt2 := True;
-     zoom.x := ScrollBox1.HorzScrollBar.Position + Trunc(ScrollBox1.Width/2);
+     Zoom.X := ScrollBox1.HorzScrollBar.Position + Trunc(ScrollBox1.Width/2);
      zoom.y := ScrollBox1.VertScrollBar.Position + Trunc(ScrollBox1.Height/2);
      SBHelyx := Abra.Width;
      SBHelyy := Abra.Height;
