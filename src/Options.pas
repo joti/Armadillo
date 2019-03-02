@@ -3,8 +3,7 @@ unit Options;
 interface
 
   uses
-    Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-    StdCtrls, ComCtrls, Spin;
+    Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, ComCtrls, Spin;
 
   type
     TOptionsForm = class(TForm)
@@ -18,12 +17,12 @@ interface
       Kozepigazit: TCheckBox;
       Margolabel: TLabel;
       Lapszazalek: TLabel;
-      SzazalekEdit: TEdit;
+      SzazalekEd: TEdit;
       Szazaleklabel: TLabel;
       Legalabb: TLabel;
-      LegalabbEdit: TEdit;
+      LegalabbEd: TEdit;
       KerekitLabel: TLabel;
-      KerekComboBox: TComboBox;
+      KerekitesCB: TComboBox;
       TabSheet3: TTabSheet;
       LapOn: TCheckBox;
       Lapmilyen: TComboBox;
@@ -66,10 +65,10 @@ interface
       HosszuChk: TCheckBox;
       procedure OKBtnClick(Sender: TObject);
       procedure MaigazitClick(Sender: TObject);
-      procedure LegalabbEditKeyPress(Sender: TObject; var Key: Char);
-      procedure LegalabbEditExit(Sender: TObject);
-      procedure SzazalekEditKeyPress(Sender: TObject; var Key: Char);
-      procedure SzazalekEditExit(Sender: TObject);
+      procedure LegalabbEdKeyPress(Sender: TObject; var Key: Char);
+      procedure LegalabbEdExit(Sender: TObject);
+      procedure SzazalekEdKeyPress(Sender: TObject; var Key: Char);
+      procedure SzazalekEdExit(Sender: TObject);
       procedure PartfileBtnClick(Sender: TObject);
       procedure HatarfileBtnClick(Sender: TObject);
       procedure TofileBtnClick(Sender: TObject);
@@ -88,9 +87,9 @@ interface
       procedure Vas6Change(Sender: TObject);
       procedure Vas7Change(Sender: TObject);
       procedure Vas8Change(Sender: TObject);
-      procedure SzazalekEditChange(Sender: TObject);
-      procedure LegalabbEditChange(Sender: TObject);
-      procedure KerekComboBoxChange(Sender: TObject);
+      procedure SzazalekEdChange(Sender: TObject);
+      procedure LegalabbEdChange(Sender: TObject);
+      procedure KerekitesCBChange(Sender: TObject);
     private
       { Private declarations }
     public
@@ -110,7 +109,7 @@ implementation
 
 {$R *.DFM}
 
-  uses Page, Main;
+  uses Page, Main, General;
 
   function szamvizsgalo(szam : String) : Boolean;
   var i: Byte;
@@ -146,9 +145,9 @@ implementation
     Maigazit.Checked        := IniFile.ReadBool   ('Meretezes', 'Maigazitas'     , True);
     Autozoom.Checked        := IniFile.ReadBool   ('Meretezes', 'Autozoom'       , True);
     Kozepigazit.Checked     := IniFile.ReadBool   ('Meretezes', 'Kozepreigazitas', True);
-    SzazalekEdit.Text       := IniFile.ReadString ('Meretezes', 'Margo1'         , '10');
-    LegalabbEdit.Text       := IniFile.ReadString ('Meretezes', 'Margo2'         , '0 ' + SI[Eta]);
-    KerekCombobox.Itemindex := IniFile.ReadInteger('Meretezes', 'Kerekites'      , 1);
+    SzazalekEd.Text         := IniFile.ReadString ('Meretezes', 'Margo1'         , '10');
+    LegalabbEd.Text         := IniFile.ReadString ('Meretezes', 'Margo2'         , '0 ' + SI[Egyseg]);
+    KerekitesCB.Itemindex   := IniFile.ReadInteger('Meretezes', 'Kerekites'      , 1);
 
     // lap megjelenítése
     LapOn.Checked       := IniFile.ReadBool   ('Megjelenites', 'Lap'         ,True);
@@ -173,87 +172,84 @@ implementation
 
   procedure TOptionsForm.MaigazitClick(Sender: TObject);
   begin
-   Valt:=True;
+   NeedSaveIni:=True;
    Vetvalt:=True;
 
    if not Elso and not Maigazit.Checked then
      MainForm.LaphozBtn.Enabled := True;
   end;
 
-  procedure TOptionsForm.LegalabbEditKeyPress(Sender: TObject; var Key: Char);
+  procedure TOptionsForm.LegalabbEdKeyPress(Sender: TObject; var Key: Char);
   begin
     if not (Key in [',','0'..'9',#8]) then Key:=#0;
   end;
 
-  procedure TOptionsForm.LegalabbEditExit(Sender: TObject);
+  procedure TOptionsForm.LegalabbEdExit(Sender: TObject);
   var i:Double;
   begin
-   if Szamvizsgalo(LegalabbEdit.Text) then
-    begin
-     Minmargomi:=Atszamit(Eta,3,StrToFloat(Copy(LegalabbEdit.Text,1,szamhossz)));
-     if Lx<Ly then i:=Lx else i:=Ly;
-     if Minmargomi>=i/2 then
-             begin
-               LegalabbEdit.Setfocus;
-               MessageDlg('Túl nagy méret',mtInformation,[mbOK],0);
-             end;
-    end
-   else
-    begin
-        LegalabbEdit.SetFocus;
-        MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
+    if Szamvizsgalo(LegalabbEd.Text) then begin
+      Minmargomi := Convert(Egyseg, 3, StrToFloat(Copy(LegalabbEd.Text, 1, szamhossz)));
+      if Lx < Ly then
+        i := Lx
+      else
+        i := Ly;
+      if Minmargomi >= i/2 then begin
+        LegalabbEd.SetFocus;
+        MessageDlg('Túl nagy méret',mtInformation,[mbOK],0);
+      end;
+    end else begin
+      LegalabbEd.SetFocus;
+      MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
     end
   end;
 
-  procedure TOptionsForm.SzazalekEditKeyPress(Sender: TObject; var Key: Char);
+  procedure TOptionsForm.SzazalekEdKeyPress(Sender: TObject; var Key: Char);
   begin
     if not (Key in ['0'..'9',#8]) then Key:=#0;
   end;
 
-  procedure TOptionsForm.SzazalekEditExit(Sender: TObject);
+  procedure TOptionsForm.SzazalekEdExit(Sender: TObject);
   begin
-   if (Nagyitvizsgal(SzazalekEdit.Text)) or (SzazalekEdit.Text='0') then
-    begin
-     Szazalek:=StrToInt(SzazalekEdit.Text);
-     if Szazalek>=50 then
-             begin
-               SzazalekEdit.Setfocus;
-               MessageDlg('Túl nagy méret',mtInformation,[mbOK],0);
-             end;
-    end
-   else
-    begin
-      SzazalekEdit.SetFocus;
-      MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
+    if (NagyitasVizsgalo(SzazalekEd.Text)) or (SzazalekEd.Text = '0') then begin
+      Szazalek := StrToInt(SzazalekEd.Text);
+      if Szazalek >= 50 then begin
+        SzazalekEd.SetFocus;
+        MessageDlg('Túl nagy méret', mtInformation, [mbOK], 0);
+      end;
+    end else begin
+      SzazalekEd.SetFocus;
+      MessageDlg('Érvénytelen méret', mtInformation, [mbOK], 0);
     end
   end;
 
   procedure TOptionsForm.PartfileBtnClick(Sender: TObject);
   begin
-    Valt:=True;
-    OpenDialog1.InitialDir:=AlapDir;
-    if OpenDialog1.Execute then
-     if ExtractFileDir(OpenDialog1.FileName)=AlapDir
-      then Parttxt.Text:=ExtractFileName(OpenDialog1.FileName)
-      else Parttxt.Text:=OpenDialog1.FileName;
+    NeedSaveIni := True;
+    OpenDialog1.InitialDir := ApplDir;
+    if OpenDialog1.Execute then begin
+      if ExtractFileDir(OpenDialog1.FileName) = ApplDir then
+        Parttxt.Text := ExtractFileName(OpenDialog1.FileName)
+      else
+        Parttxt.Text := OpenDialog1.FileName;
+    end;    
   end;
 
   procedure TOptionsForm.HatarfileBtnClick(Sender: TObject);
   begin
-    Valt:=True;
-    OpenDialog1.InitialDir:=AlapDir;
+    NeedSaveIni := True;
+    OpenDialog1.InitialDir := ApplDir;
     if OpenDialog1.Execute then
-     if ExtractFileDir(OpenDialog1.FileName)=AlapDir
+     if ExtractFileDir(OpenDialog1.FileName) = ApplDir
       then Hatartxt.Text:=ExtractFileName(OpenDialog1.FileName)
       else Hatartxt.Text:=OpenDialog1.FileName;
   end;
 
   procedure TOptionsForm.TofileBtnClick(Sender: TObject);
   begin
-    Valt := True;
-    OpenDialog1.InitialDir:=AlapDir;
+    NeedSaveIni := True;
+    OpenDialog1.InitialDir := ApplDir;
     if OpenDialog1.Execute then begin
-      if ExtractFileDir(OpenDialog1.FileName) = AlapDir then
+      if ExtractFileDir(OpenDialog1.FileName) = ApplDir then
         Totxt.Text := ExtractFileName(OpenDialog1.FileName)
       else
         Totxt.Text:=OpenDialog1.FileName;
@@ -262,89 +258,89 @@ implementation
 
   procedure TOptionsForm.AbraigazitClick(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
     Vetvalt := True;
     Sajt3 := True;
   end;
 
   procedure TOptionsForm.AutozoomClick(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.KozepigazitClick(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.LapOnClick(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.HosszuChkClick(Sender: TObject);
   begin
-    Valt := True
+    NeedSaveIni := True
   end;
 
   procedure TOptionsForm.LapmilyenChange(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.Vas1Change(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.Vas2Change(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.Vas3Change(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.Vas4Change(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.Vas5Change(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.Vas6Change(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.Vas7Change(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
   procedure TOptionsForm.Vas8Change(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.SzazalekEditChange(Sender: TObject);
+  procedure TOptionsForm.SzazalekEdChange(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.LegalabbEditChange(Sender: TObject);
+  procedure TOptionsForm.LegalabbEdChange(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.KerekComboBoxChange(Sender: TObject);
+  procedure TOptionsForm.KerekitesCBChange(Sender: TObject);
   begin
-    Valt := True;
+    NeedSaveIni := True;
   end;
 
 end.

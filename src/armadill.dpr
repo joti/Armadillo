@@ -23,10 +23,12 @@ var Nyito: TSplashForm;
 
 begin
   Application.Initialize;
-  Nyito:=TSplashForm.Create(Application);
+  Application.Title := 'Armadillo 2.0';
+
+  Nyito := TSplashForm.Create(Application);
   Nyito.Show;
   Nyito.Update;
-  Application.Title := 'Armadillo 2.0';
+
   Application.CreateForm(TMainForm, MainForm);
   Application.CreateForm(TAboutForm, AboutForm);
   Application.CreateForm(TParametersForm1, ParametersForm1);
@@ -38,14 +40,15 @@ begin
   Application.CreateForm(TSplashForm, SplashForm);
   Application.CreateForm(TParametersForm3, ParametersForm3);
   Application.CreateForm(TParametersForm4, ParametersForm4);
-  with PageForm do
-   begin
-    PapirszelesEdit.Text:=Format('%-4g',[Lapx[PapirCombobox.Itemindex,Eta]])+SI[Eta];
-    PapirmagasEdit.Text:=Format('%-4g',[Lapy[PapirCombobox.Itemindex,Eta]])+SI[Eta];
-   end;
+
+  with PageForm do begin
+    PapirszelesEd.Text := Format('%-4g', [Lapx[PapirCB.Itemindex, Egyseg]]) + UNITS[Egyseg].Code;
+    PapirmagasEd.Text := Format('%-4g', [Lapy[PapirCB.Itemindex, Egyseg]]) + UNITS[Egyseg].Code;
+  end;
+
   Nyito.Close;
   UjForm.Show;
   Nyito.Free;
-  Valt:=False;
+  NeedSaveIni := False;
   Application.Run;
 end.

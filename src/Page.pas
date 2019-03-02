@@ -2,444 +2,377 @@ unit Page;
 
 interface
 
-uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ExtCtrls, StdCtrls, ComCtrls, Buttons, Spin;
+  uses
+    Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+    ExtCtrls, StdCtrls, ComCtrls, Buttons, Spin, General;
 
-type
-  TPageForm = class(TForm)
-    PapirCombobox: TComboBox;
-    PapirmeretLabel: TLabel;
-    PapirszelesLabel: TLabel;
-    PapirmagasLabel: TLabel;
-    PapirszelesEdit: TEdit;
-    PapirmagasEdit: TEdit;
-    PapirOKBtn: TButton;
-    PapirCancelBtn: TButton;
-    TajolGroupBox: TGroupBox;
-    LapImage1: TImage;
-    AlloBtn: TRadioButton;
-    FekvoBtn: TRadioButton;
-    LapImage2: TImage;
-    PapirszelesSpin: TSpinButton;
-    PapirMagasSpin: TSpinButton;
-    procedure FekvoBtnClick(Sender: TObject);
-    procedure AlloBtnClick(Sender: TObject);
-    procedure PapirComboboxChange(Sender: TObject);
-    procedure PapirszelesEditExit(Sender: TObject);
-    procedure PapirmagasEditExit(Sender: TObject);
-    procedure PapirszelesEditKeyPress(Sender: TObject; var Key: Char);
-    procedure PapirmagasEditKeyPress(Sender: TObject; var Key: Char);
-    procedure PapirOKBtnClick(Sender: TObject);
-    procedure FormShow(Sender: TObject);
-    procedure PapirCancelBtnClick(Sender: TObject);
-    procedure PapirszelesSpinUpClick(Sender: TObject);
-    procedure PapirszelesSpinDownClick(Sender: TObject);
-    procedure PapirMagasSpinUpClick(Sender: TObject);
-    procedure PapirMagasSpinDownClick(Sender: TObject);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure FormCreate(Sender: TObject);
-  private
-    { Private declarations }
-  public
-    { Public declarations }
-  end;
+  type
+    TPageForm = class(TForm)
+      PapirCB: TComboBox;
+      PapirmeretLabel: TLabel;
+      PapirszelesLabel: TLabel;
+      PapirmagasLabel: TLabel;
+      PapirszelesEd: TEdit;
+      PapirmagasEd: TEdit;
+      PapirOKBtn: TButton;
+      PapirCancelBtn: TButton;
+      TajolGroupBox: TGroupBox;
+      LapImage1: TImage;
+      AlloBtn: TRadioButton;
+      FekvoBtn: TRadioButton;
+      LapImage2: TImage;
+      PapirszelesSpin: TSpinButton;
+      PapirMagasSpin: TSpinButton;
+      procedure FekvoBtnClick(Sender: TObject);
+      procedure AlloBtnClick(Sender: TObject);
+      procedure PapirCBChange(Sender: TObject);
+      procedure PapirszelesEdExit(Sender: TObject);
+      procedure PapirmagasEdExit(Sender: TObject);
+      procedure PapirszelesEdKeyPress(Sender: TObject; var Key: Char);
+      procedure PapirmagasEdKeyPress(Sender: TObject; var Key: Char);
+      procedure PapirOKBtnClick(Sender: TObject);
+      procedure FormShow(Sender: TObject);
+      procedure PapirCancelBtnClick(Sender: TObject);
+      procedure PapirszelesSpinUpClick(Sender: TObject);
+      procedure PapirszelesSpinDownClick(Sender: TObject);
+      procedure PapirMagasSpinUpClick(Sender: TObject);
+      procedure PapirMagasSpinDownClick(Sender: TObject);
+      procedure FormClose(Sender: TObject; var Action: TCloseAction);
+      procedure FormCreate(Sender: TObject);
+    private
+      { Private declarations }
+    public
+      { Public declarations }
+    end;
 
-var
-  PageForm: TPageForm;
-  szamhossz: Byte=1;
-  TartIndex:Byte;
-  Eta: Byte=0;
-  TartSzeles,TartMagas:String;
-  TartAllo: Boolean;
-  Max: Integer;
-  Uzenet: String;
-  function szamvizsgal(szam:String):Boolean;
+  var
+    PageForm: TPageForm;
+    szamhossz: Byte=1;
+    Max: Integer;
 
 implementation
 
-uses Main;
+  uses Main;
 
-{$R *.DFM}
+  var
+    TartSzeles, TartMagas : String;
+    TartIndex : Byte;
+    TartAllo : Boolean;
 
-function Atszamit(me1,me2:Byte;ertek:Double):Double;
-begin
-  result:=0;
-  case me1 of
-  0: result:=ertek/25.39;
-  1: result:=ertek/2.539;
-  2: result:=ertek;
-  3: result:=ertek/1000;
+  {$R *.DFM}
+
+  procedure TPageForm.FekvoBtnClick(Sender: TObject);
+  begin
+    AlloBtn.Checked := False;
+    LapImage1.Visible := False;
+    LapImage2.Visible := True;
+    PapirszelesEd.Top := 53;
+    PapirmagasEd.Top := 77;
+    PapirszelesSpin.Top := 53;
+    PapirmagasSpin.Top := 77;
   end;
-  case me2 of
-  0: result:=result*25.39;
-  1: result:=result*2.539;
-  3: result:=result*1000;
+
+  procedure TPageForm.AlloBtnClick(Sender: TObject);
+  begin
+    NeedSaveIni := True;
+    FekvoBtn.Checked := False;
+    LapImage2.Visible := False;
+    LapImage1.Visible := True;
+    PapirszelesEd.Top := 77;
+    PapirmagasEd.Top := 53;
+    PapirszelesSpin.Top := 77;
+    PapirmagasSpin.Top := 53;
   end;
-end;
 
-function szamvizsgal(szam:String):Boolean;
-var i: Byte;
-begin
- if Length(szam)=0 then szamvizsgal:=False else
- if  not (szam[1] in ['0'..'9']) then szamvizsgal:=False
- else begin
-        if (szam[1]='0') and (szam[2]<>',') then szamvizsgal:=False;
-        for i:=Length(szam) downto 1 do
-          if not (szam[i] in ['0'..'9',',']) then szamhossz:=i-1
-        else
-         begin
-          szamvizsgal:=True;
-         end;
-      end;
-end;
-
-procedure TPageForm.FekvoBtnClick(Sender: TObject);
-begin
-  AlloBtn.Checked:=False;
-  LapImage1.Visible:=False;
-  LapImage2.Visible:=True;
-  PapirszelesEdit.Top:=53;
-  PapirmagasEdit.Top:=77;
-  PapirszelesSpin.Top:=53;
-  PapirmagasSpin.Top:=77;
-end;
-
-procedure TPageForm.AlloBtnClick(Sender: TObject);
-begin
-  Valt:=True;
-  FekvoBtn.Checked:=False;
-  LapImage2.Visible:=False;
-  LapImage1.Visible:=True;
-  PapirszelesEdit.Top:=77;
-  PapirmagasEdit.Top:=53;
-  PapirszelesSpin.Top:=77;
-  PapirmagasSpin.Top:=53;
-end;
-
-procedure TPageForm.PapirComboboxChange(Sender: TObject);
-begin
-  Valt:=True;
-  if PapirCombobox.Itemindex<>6 then
-    begin
-      Lx:=Lapx[PapirCombobox.Itemindex,3];
-      Ly:=Lapy[PapirCombobox.Itemindex,3];
-      PapirszelesEdit.Text:=Format('%-g ',[Lapx[PapirCombobox.Itemindex,Eta]])+SI[Eta];
-      PapirmagasEdit.Text:=Format('%-g ',[Lapy[PapirCombobox.Itemindex,Eta]])+SI[Eta];
+  procedure TPageForm.PapirCBChange(Sender: TObject);
+  begin
+    NeedSaveIni:=True;
+    if PapirCB.ItemIndex <> 6 then begin
+      Lx := Lapx[PapirCB.ItemIndex, 3];
+      Ly := Lapy[PapirCB.ItemIndex, 3];
+      PapirszelesEd.Text := Format('%-g ', [Lapx[PapirCB.ItemIndex, Egyseg]]) + UNITS[Egyseg].Code;
+      PapirmagasEd.Text := Format('%-g ', [Lapy[PapirCB.ItemIndex, Egyseg]]) + UNITS[Egyseg].Code;
     end;
-end;
+  end;
 
-procedure TPageForm.PapirszelesEditExit(Sender: TObject);
-begin
-if Szamvizsgal(PapirmagasEdit.Text) then
-  Lapy[6,Eta]:=StrToFloat(Copy(PapirmagasEdit.Text,1,szamhossz));
-if Szamvizsgal(PapirszelesEdit.Text)=True then
-       begin
-         Lapx[6,Eta]:=StrToFloat(Copy(PapirszelesEdit.Text,1,szamhossz));
-         if Int(Lapx[6,Eta])<Max then
-           begin
-            PapirCombobox.Itemindex:=6;
-            if Lapx[6,Eta]<Lapy[6,Eta] then begin
-                            Allobtn.Checked:=True;
-                            Fekvobtn.Checked:=False;
-                            LapImage2.Visible:=False;
-                            LapImage1.Visible:=True;
-                          end
-                     else begin
-                            Allobtn.Checked:=False;
-                            Fekvobtn.Checked:=True;
-                            LapImage2.Visible:=True;
-                            LapImage1.Visible:=False;
-                          end;
-           end
-         else
-           begin
-             PapirszelesEdit.Setfocus;
-             MessageDlg(Format('A méretnek %d %s alatt kell lennie',
-              [Max,MainForm.EgysegCB.Items[Eta]]),
-              mtInformation,[mbOK],0);
-           end;
-       end
-   else
-       begin
-         PapirszelesEdit.SetFocus;
-         MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
-       end
-end;
+  procedure TPageForm.PapirszelesEdExit(Sender: TObject);
+  var
+    NumLength : Integer;
+  begin
+    if NumberChk(PapirmagasEd.Text, NumLength) then
+      Lapy[6, Egyseg] := StrToFloat(Copy(PapirmagasEd.Text, 1, NumLength));
+    if NumberChk(PapirszelesEd.Text, NumLength) then begin
+      Lapx[6, Egyseg] := StrToFloat(Copy(PapirszelesEd.Text, 1, NumLength));
+      if Int(Lapx[6, Egyseg]) < Max then begin
+        PapirCB.ItemIndex := 6;
+        if Lapx[6, Egyseg] < Lapy[6, Egyseg] then begin
+          AlloBtn.Checked := True;
+          FekvoBtn.Checked := False;
+          LapImage2.Visible := False;
+          LapImage1.Visible := True;
+        end else begin
+          AlloBtn.Checked := False;
+          FekvoBtn.Checked := True;
+          LapImage2.Visible := True;
+          LapImage1.Visible := False;
+        end;
+      end else begin
+        PapirszelesEd.SetFocus;
+        MessageDlg(Format('A méretnek %d %s alatt kell lennie', [Max, MainForm.EgysegCB.Items[Egyseg]]), mtInformation,[mbOK],0);
+      end;
+    end else begin
+      PapirszelesEd.SetFocus;
+      InvalidValueMsg;
+    end
+  end;
 
-procedure TPageForm.PapirmagasEditExit(Sender: TObject);
-begin
-if Szamvizsgal(PapirszelesEdit.Text) then
-  Lapx[6,Eta]:=StrToFloat(Copy(PapirszelesEdit.Text,1,szamhossz));
-if Szamvizsgal(PapirmagasEdit.Text)=True then
-       begin
-         Lapy[6,Eta]:=StrToFloat(Copy(PapirmagasEdit.Text,1,szamhossz));
-         if Int(Lapy[6,Eta])<Max then
-           begin
-            PapirCombobox.Itemindex:=6;
-            if Lapx[6,Eta]<Lapy[6,Eta] then begin
-                            Allobtn.Checked:=True;
-                            Fekvobtn.Checked:=False;
-                            LapImage2.Visible:=False;
-                            LapImage1.Visible:=True;
-                          end
-                     else begin
-                            Allobtn.Checked:=False;
-                            Fekvobtn.Checked:=True;
-                            LapImage2.Visible:=True;
-                            LapImage1.Visible:=False;
-                          end;
-           end
-         else
-           begin
-             PapirmagasEdit.Setfocus;
-             MessageDlg(Format('A méretnek %d %s alatt kell lennie',
-              [Max,MainForm.EgysegCB.Items[Eta]]),
-              mtInformation,[mbOK],0);
-           end;
-       end
-   else
-       begin
-         PapirmagasEdit.SetFocus;
-         MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
-       end;
-end;
+  procedure TPageForm.PapirmagasEdExit(Sender: TObject);
+  var
+    NumLength : Integer;
+  begin
+    if NumberChk(PapirszelesEd.Text, NumLength) then
+      Lapx[6, Egyseg] := StrToFloat(Copy(PapirszelesEd.Text, 1, NumLength));
+    if NumberChk(PapirmagasEd.Text, NumLength) then begin
+      Lapy[6,Egyseg] := StrToFloat(Copy(PapirmagasEd.Text, 1, NumLength));
+      if Int(Lapy[6, Egyseg]) < Max then begin
+        PapirCB.ItemIndex := 6;
+        if Lapx[6, Egyseg] < Lapy[6, Egyseg] then begin
+          AlloBtn.Checked := True;
+          FekvoBtn.Checked := False;
+          LapImage2.Visible := False;
+          LapImage1.Visible := True;
+        end else begin
+          AlloBtn.Checked := False;
+          FekvoBtn.Checked := True;
+          LapImage2.Visible := True;
+          LapImage1.Visible := False;
+        end;
+      end else begin
+        PapirmagasEd.Setfocus;
+        MessageDlg(Format('A méretnek %d %s alatt kell lennie', [Max, MainForm.EgysegCB.Items[Egyseg]]), mtInformation, [mbOK], 0);
+      end;
+    end else begin
+      PapirmagasEd.SetFocus;
+      InvalidValueMsg;
+    end;
+  end;
 
-procedure TPageForm.PapirszelesEditKeyPress(Sender: TObject; var Key: Char);
-begin
-if Szamvizsgal(PapirmagasEdit.Text) then
-  Lapy[6,Eta]:=StrToFloat(Copy(PapirmagasEdit.Text,1,szamhossz));
-if Key=#13 then if Szamvizsgal(PapirszelesEdit.Text)=True then
-       begin
-         Lapx[6,Eta]:=StrToFloat(Copy(PapirszelesEdit.Text,1,szamhossz));
-         if Int(Lapx[6,Eta])<Max then
-           begin
-            PapirCombobox.Itemindex:=6;
-            if Lapx[6,Eta]<Lapy[6,Eta] then begin
-                            Allobtn.Checked:=True;
-                            Fekvobtn.Checked:=False;
-                            LapImage2.Visible:=False;
-                            LapImage1.Visible:=True;
-                          end
-                     else begin
-                            Allobtn.Checked:=False;
-                            Fekvobtn.Checked:=True;
-                            LapImage2.Visible:=True;
-                            LapImage1.Visible:=False;
-                          end;
-            Close;
-           end
-         else
-           begin
-             PapirszelesEdit.Setfocus;
-             MessageDlg(Format('A méretnek %d %s alatt kell lennie',
-              [Max,MainForm.EgysegCB.Items[Eta]]),
-              mtInformation,[mbOK],0);
-           end;
-       end
-   else
-       begin
-         PapirszelesEdit.SetFocus;
-         MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
-       end
-else if not (Key in ['0'..'9',',',#8]) then Key:=#0;
-end;
+  procedure TPageForm.PapirszelesEdKeyPress(Sender: TObject; var Key: Char);
+  var
+    NumLength : Integer;
+  begin
+    if NumberChk(PapirmagasEd.Text, NumLength) then
+      Lapy[6,Egyseg] := StrToFloat(Copy(PapirmagasEd.Text, 1, NumLength));
 
-procedure TPageForm.PapirmagasEditKeyPress(Sender: TObject; var Key: Char);
-begin
-if Szamvizsgal(PapirszelesEdit.Text) then
-  Lapx[6,Eta]:=StrToFloat(Copy(PapirszelesEdit.Text,1,szamhossz));
-if Key=#13 then if Szamvizsgal(PapirmagasEdit.Text)=True then
-         begin
-          Lapy[6,Eta]:=StrToFloat(Copy(PapirmagasEdit.Text,1,szamhossz));
-          if Int(Lapy[6,Eta])<Max then
-           begin
-             PapirCombobox.Itemindex:=6;
-             if Lapx[6,Eta]<Lapy[6,Eta] then begin
-                            Allobtn.Checked:=True;
-                            Fekvobtn.Checked:=False;
-                            LapImage2.Visible:=False;
-                            LapImage1.Visible:=True;
-                           end
-                      else begin
-                            Allobtn.Checked:=False;
-                            Fekvobtn.Checked:=True;
-                            LapImage2.Visible:=True;
-                            LapImage1.Visible:=False;
-                           end;
-             Close;
-           end
-          else
-           begin
-             PapirmagasEdit.Setfocus;
-             MessageDlg(Format('A méretnek %d %s alatt kell lennie',
-              [Max,MainForm.EgysegCB.Items[Eta]]),
-              mtInformation,[mbOK],0);
-           end;
-         end
-    else
-      begin
-        PapirmagasEdit.SetFocus;
+    if Key = #13 then begin // ENTER
+      if NumberChk(PapirszelesEd.Text, NumLength) then begin
+        Lapx[6,Egyseg] := StrToFloat(Copy(PapirszelesEd.Text, 1, NumLength));
+        if Int(Lapx[6,Egyseg]) < Max then begin
+          PapirCB.ItemIndex := 6;
+          if Lapx[6,Egyseg] < Lapy[6,Egyseg] then begin
+            AlloBtn.Checked := True;
+            FekvoBtn.Checked := False;
+            LapImage2.Visible := False;
+            LapImage1.Visible := True;
+          end else begin
+            AlloBtn.Checked := False;
+            FekvoBtn.Checked := True;
+            LapImage2.Visible := True;
+            LapImage1.Visible := False;
+          end;
+          Close;
+        end else begin
+          PapirszelesEd.SetFocus;
+          MessageDlg(Format('A méretnek %d %s alatt kell lennie', [Max, MainForm.EgysegCB.Items[Egyseg]]), mtInformation, [mbOK], 0);
+        end;
+      end else begin
+        PapirszelesEd.SetFocus;
         MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
       end
-else if not (Key in ['0'..'9',',',#8]) then Key:=#0;
-end;
-
-procedure TPageForm.PapirOKBtnClick(Sender: TObject);
-begin
-  Close;
-end;
-
-procedure TPageForm.FormShow(Sender: TObject);
-begin
-  TartIndex:=PapirCombobox.Itemindex;
-  TartAllo:=Allobtn.Checked;
-  TartSzeles:=PapirszelesEdit.Text;
-  TartMagas:=PapirmagasEdit.Text;
-  case Eta of
-    0:Max:=1500;
-    1:Max:=150;
-    2:Max:=60;
-    3:Max:=60000;
+    end else if not (Key in ['0'..'9',',','.',#8]) then
+      Key := #0;
   end;
-end;
 
-procedure TPageForm.PapirCancelBtnClick(Sender: TObject);
-begin
-  PapirCombobox.Itemindex:=Tartindex;
-  if TartAllo=True then
-    begin
-     Allobtn.Checked:=True;
-     Fekvobtn.Checked:=False;
-     LapImage2.Visible:=False;
-     LapImage1.Visible:=True;
-    end
-  else
-    begin
-     Fekvobtn.Checked:=True;
-     AlloBtn.Checked:=False;
-     LapImage1.Visible:=False;
-     LapImage2.Visible:=True;
+  procedure TPageForm.PapirmagasEdKeyPress(Sender: TObject; var Key: Char);
+  var
+    NumLength : Integer;
+  begin
+    if NumberChk(PapirszelesEd.Text, NumLength) then
+      Lapx[6, Egyseg] := StrToFloat(Copy(PapirszelesEd.Text, 1, NumLength));
+
+    if Key = #13 then begin // ENTER leütése
+      if NumberChk(PapirmagasEd.Text, NumLength) then begin
+        Lapy[6, Egyseg] := StrToFloat(Copy(PapirmagasEd.Text, 1, NumLength));
+        if Int(Lapy[6, Egyseg]) < Max then begin
+          PapirCB.ItemIndex := 6;
+          if Lapx[6, Egyseg] < Lapy[6, Egyseg] then begin
+            AlloBtn.Checked := True;
+            FekvoBtn.Checked := False;
+            LapImage2.Visible := False;
+            LapImage1.Visible := True;
+          end else begin
+            AlloBtn.Checked := False;
+            FekvoBtn.Checked := True;
+            LapImage2.Visible := True;
+            LapImage1.Visible := False;
+          end;
+          Close;
+        end else begin
+          PapirmagasEd.SetFocus;
+          MessageDlg(Format('A méretnek %d %s alatt kell lennie', [Max,MainForm.EgysegCB.Items[Egyseg]]), mtInformation, [mbOK], 0);
+        end;
+      end else begin
+        PapirmagasEd.SetFocus;
+        MessageDlg('Érvénytelen méret', mtInformation, [mbOK], 0);
+      end
+    end else if not (Key in ['0'..'9',',','.',#8]) then
+      Key:=#0;
+  end;
+
+  procedure TPageForm.PapirOKBtnClick(Sender: TObject);
+  begin
+    Close;
+  end;
+
+  procedure TPageForm.FormShow(Sender: TObject);
+  begin
+    TartIndex := PapirCB.ItemIndex;
+    TartAllo := AlloBtn.Checked;
+    TartSzeles := PapirszelesEd.Text;
+    TartMagas := PapirmagasEd.Text;
+    case Egyseg of
+      0 : Max := 1500;
+      1 : Max := 150;
+      2 : Max := 60;
+      3 : Max := 60000;
     end;
-  PapirszelesEdit.Text:=TartSzeles;
-  PapirmagasEdit.Text:=TartMagas;
-end;
+  end;
 
-procedure TPageForm.PapirszelesSpinUpClick(Sender: TObject);
-begin
-  if Szamvizsgal(PapirmagasEdit.Text) then
-    Lapy[6,Eta]:=StrToFloat(Copy(PapirmagasEdit.Text,1,szamhossz));
-  if Szamvizsgal(PapirszelesEdit.Text)=True then
-         begin
-          Lapx[6,Eta]:=StrToFloat(Copy(PapirszelesEdit.Text,1,szamhossz));
-          if Lapx[6,Eta]+1<Max then
-            begin
-             Lapx[6,Eta]:=Lapx[6,Eta]+1;
-             PapirCombobox.Itemindex:=3;
-             PapirszelesEdit.Text:=Format('%-2.4g ',[Lapx[6,Eta]])+SI[Eta];
-            end;
-         end;
-end;
-
-procedure TPageForm.PapirszelesSpinDownClick(Sender: TObject);
-begin
-  if Szamvizsgal(PapirmagasEdit.Text) then
-    Lapy[6,Eta]:=StrToFloat(Copy(PapirmagasEdit.Text,1,szamhossz));
-  if Szamvizsgal(PapirszelesEdit.Text)=True then
-         begin
-          Lapx[6,Eta]:=StrToFloat(Copy(PapirszelesEdit.Text,1,szamhossz));
-          if Lapx[6,Eta]-1>0 then
-            begin
-             Lapx[6,Eta]:=Lapx[6,Eta]-1;
-             PapirCombobox.Itemindex:=3;
-             PapirszelesEdit.Text:=Format('%-2.4g ',[Lapx[6,Eta]])+SI[Eta];
-            end;
-         end;
-end;
-
-procedure TPageForm.PapirMagasSpinUpClick(Sender: TObject);
-begin
-  if Szamvizsgal(PapirszelesEdit.Text) then
-    Lapx[6,Eta]:=StrToFloat(Copy(PapirszelesEdit.Text,1,szamhossz));
-  if Szamvizsgal(PapirmagasEdit.Text)=True then
-         begin
-          Lapy[6,Eta]:=StrToFloat(Copy(PapirmagasEdit.Text,1,szamhossz));
-          if Lapy[6,Eta]+1<Max then
-            begin
-             Lapy[6,Eta]:=Lapy[6,Eta]+1;
-             PapirCombobox.Itemindex:=3;
-             PapirmagasEdit.Text:=Format('%-2.4g ',[Lapy[6,Eta]])+SI[Eta];
-            end;
-         end;
-end;
-
-procedure TPageForm.PapirMagasSpinDownClick(Sender: TObject);
-begin
-  if Szamvizsgal(PapirszelesEdit.Text) then
-    Lapx[6,Eta]:=StrToFloat(Copy(PapirszelesEdit.Text,1,szamhossz));
-  if Szamvizsgal(PapirmagasEdit.Text)=True then
-         begin
-          Lapy[6,Eta]:=StrToFloat(Copy(PapirmagasEdit.Text,1,szamhossz));
-          if Lapy[6,Eta]-1>0 then
-            begin
-             Lapy[6,Eta]:=Lapy[6,Eta]-1;
-             PapirCombobox.Itemindex:=3;
-             PapirmagasEdit.Text:=Format('%-2.4g ',[Lapy[6,Eta]])+SI[Eta];
-            end;
-         end;
-end;
-
-procedure TPageForm.FormClose(Sender: TObject; var Action: TCloseAction);
-var i:Byte;
-begin
-  i:=PapirCombobox.Itemindex;
-  if i=6 then
-    begin
-      Lapx[6,0]:=Atszamit(Eta,0,Lapx[6,Eta]);
-      Lapx[6,1]:=Atszamit(Eta,1,Lapx[6,Eta]);
-      Lapx[6,2]:=Atszamit(Eta,2,Lapx[6,Eta]);
-      Lapx[6,3]:=Atszamit(Eta,3,Lapx[6,Eta]);
-      Lapy[6,0]:=Atszamit(Eta,0,Lapy[6,Eta]);
-      Lapy[6,1]:=Atszamit(Eta,1,Lapy[6,Eta]);
-      Lapy[6,2]:=Atszamit(Eta,2,Lapy[6,Eta]);
-      Lapy[6,3]:=Atszamit(Eta,3,Lapy[6,Eta]);
+  procedure TPageForm.PapirCancelBtnClick(Sender: TObject);
+  begin
+    PapirCB.ItemIndex := Tartindex;
+    if TartAllo then begin
+      AlloBtn.Checked := True;
+      FekvoBtn.Checked := False;
+      LapImage2.Visible := False;
+      LapImage1.Visible := True;
+    end else begin
+      FekvoBtn.Checked := True;
+      AlloBtn.Checked := False;
+      LapImage1.Visible := False;
+      LapImage2.Visible := True;
     end;
-  if Allobtn.Checked then
-     begin
-          MainForm.Lapszeles.Text:=Format('%-2.6g ',[Lapy[i,Eta]]);
-          MainForm.Lapmagas.Text:=Format('%-2.6g ',[Lapx[i,Eta]]);
-          Lx:=Lapy[i,3];
-          Ly:=Lapx[i,3];
-     end
-  else
-     begin
-          MainForm.Lapszeles.Text:=Format('%-2.6g ',[Lapx[i,Eta]]);
-          MainForm.Lapmagas.Text:=Format('%-2.6g ',[Lapy[i,Eta]]);
-          Lx:=Lapx[i,3];
-          Ly:=Lapy[i,3];
-     end;
-end;
+    PapirszelesEd.Text := TartSzeles;
+    PapirmagasEd.Text := TartMagas;
+  end;
 
-procedure TPageForm.FormCreate(Sender: TObject);
-var i: Byte;
-begin
-  PapirComboBox.Itemindex:=Inifile.ReadInteger('Papir','Meret',3);
-  i:=PapirCombobox.Itemindex;
-  AlloBtn.Checked:=IniFile.ReadBool('Papir','Tajolas',False);
-  if Allobtn.Checked then
-     begin
-          MainForm.Lapszeles.Text:=Format('%-2.6g ',[Lapy[i,Eta]]);
-          MainForm.Lapmagas.Text:=Format('%-2.6g ',[Lapx[i,Eta]]);
-          Lx:=Lapy[i,3];
-          Ly:=Lapx[i,3];
-     end
-  else
-     begin
-          MainForm.Lapszeles.Text:=Format('%-2.6g ',[Lapx[i,Eta]]);
-          MainForm.Lapmagas.Text:=Format('%-2.6g ',[Lapy[i,Eta]]);
-          Lx:=Lapx[i,3];
-          Ly:=Lapy[i,3];
-     end;
-end;
+  procedure TPageForm.PapirszelesSpinUpClick(Sender: TObject);
+  var
+    NumLength : Integer;
+  begin
+    if NumberChk(PapirmagasEd.Text, NumLength) then
+      Lapy[6, Egyseg] := StrToFloat(Copy(PapirmagasEd.Text, 1, NumLength));
+    if NumberChk(PapirszelesEd.Text, NumLength) then begin
+      Lapx[6, Egyseg] := StrToFloat(Copy(PapirszelesEd.Text, 1, NumLength));
+      if Lapx[6, Egyseg] + 1 < Max then begin
+        Lapx[6, Egyseg] := Lapx[6, Egyseg] + 1;
+        PapirCB.ItemIndex := 3;
+        PapirszelesEd.Text := Format('%-2.4g ', [Lapx[6, Egyseg]]) + UNITS[Egyseg].Code;
+      end;
+    end;
+  end;
+
+  procedure TPageForm.PapirszelesSpinDownClick(Sender: TObject);
+  var
+    NumLength : Integer;
+  begin
+    if NumberChk(PapirmagasEd.Text, NumLength) then
+      Lapy[6, Egyseg]:=StrToFloat(Copy(PapirmagasEd.Text, 1, NumLength));
+    if NumberChk(PapirszelesEd.Text, NumLength) then begin
+      Lapx[6, Egyseg]:=StrToFloat(Copy(PapirszelesEd.Text, 1, NumLength));
+      if Lapx[6, Egyseg] - 1 > 0 then begin
+        Lapx[6, Egyseg] := Lapx[6,Egyseg]-1;
+        PapirCB.ItemIndex := 3;
+        PapirszelesEd.Text := Format('%-2.4g ', [Lapx[6, Egyseg]]) + UNITS[Egyseg].Code;
+      end;
+    end;
+  end;
+
+  procedure TPageForm.PapirMagasSpinUpClick(Sender: TObject);
+  var
+    NumLength : Integer;
+  begin
+    if NumberChk(PapirszelesEd.Text, NumLength) then
+      Lapx[6, Egyseg] := StrToFloat(Copy(PapirszelesEd.Text, 1, NumLength));
+    if NumberChk(PapirmagasEd.Text, NumLength) then begin
+      Lapy[6, Egyseg] := StrToFloat(Copy(PapirmagasEd.Text, 1, NumLength));
+      if Lapy[6, Egyseg] + 1 < Max then begin
+        Lapy[6, Egyseg] := Lapy[6, Egyseg] + 1;
+        PapirCB.ItemIndex := 3;
+        PapirmagasEd.Text := Format('%-2.4g ', [Lapy[6, Egyseg]]) + UNITS[Egyseg].Code;
+      end;
+    end;
+  end;
+
+  procedure TPageForm.PapirMagasSpinDownClick(Sender: TObject);
+  var
+    NumLength : Integer;
+  begin
+    if NumberChk(PapirszelesEd.Text, NumLength) then
+      Lapx[6, Egyseg] := StrToFloat(Copy(PapirszelesEd.Text, 1, NumLength));
+    if NumberChk(PapirmagasEd.Text, NumLength) then begin
+      Lapy[6, Egyseg] := StrToFloat(Copy(PapirmagasEd.Text, 1, NumLength));
+      if Lapy[6, Egyseg] - 1 > 0 then begin
+        Lapy[6, Egyseg] := Lapy[6, Egyseg] - 1;
+        PapirCB.ItemIndex := 3;
+        PapirmagasEd.Text := Format('%-2.4g ', [Lapy[6, Egyseg]]) + UNITS[Egyseg].Code;
+      end;
+    end;
+  end;
+
+  procedure TPageForm.FormClose(Sender: TObject; var Action: TCloseAction);
+  begin
+    if PapirCB.ItemIndex = 6 then begin // Egyéni méret
+      Lapx[6,0] := Convert(Egyseg, 0, Lapx[6,Egyseg]);
+      Lapx[6,1] := Convert(Egyseg, 1, Lapx[6,Egyseg]);
+      Lapx[6,2] := Convert(Egyseg, 2, Lapx[6,Egyseg]);
+      Lapx[6,3] := Convert(Egyseg, 3, Lapx[6,Egyseg]);
+
+      Lapy[6,0] := Convert(Egyseg, 0, Lapy[6,Egyseg]);
+      Lapy[6,1] := Convert(Egyseg, 1, Lapy[6,Egyseg]);
+      Lapy[6,2] := Convert(Egyseg, 2, Lapy[6,Egyseg]);
+      Lapy[6,3] := Convert(Egyseg, 3, Lapy[6,Egyseg]);
+    end;
+
+    if AlloBtn.Checked then begin
+      MainForm.Lapszeles.Text := Format('%-2.6g ', [Lapy[PapirCB.ItemIndex, Egyseg]]);
+      MainForm.Lapmagas.Text  := Format('%-2.6g ', [Lapx[PapirCB.ItemIndex, Egyseg]]);
+      Lx := Lapy[PapirCB.ItemIndex, 3];
+      Ly := Lapx[PapirCB.ItemIndex, 3];
+    end else begin
+      MainForm.Lapszeles.Text := Format('%-2.6g ', [Lapx[PapirCB.ItemIndex, Egyseg]]);
+      MainForm.Lapmagas.Text  := Format('%-2.6g ', [Lapy[PapirCB.ItemIndex, Egyseg]]);
+      Lx := Lapx[PapirCB.ItemIndex, 3];
+      Ly := Lapy[PapirCB.ItemIndex, 3];
+    end;
+  end;
+
+  procedure TPageForm.FormCreate(Sender: TObject);
+  begin
+    PapirCB.ItemIndex := Inifile.ReadInteger('Papir', 'Meret', 3);
+    AlloBtn.Checked := IniFile.ReadBool('Papir', 'Tajolas', False);
+
+    if AlloBtn.Checked then begin
+      MainForm.Lapszeles.Text := Format('%-2.6g ',[Lapy[PapirCB.ItemIndex, Egyseg]]);
+      MainForm.Lapmagas.Text := Format('%-2.6g ',[Lapx[PapirCB.ItemIndex, Egyseg]]);
+      Lx := Lapy[PapirCB.ItemIndex, 3];
+      Ly := Lapx[PapirCB.ItemIndex, 3];
+    end else begin
+      MainForm.Lapszeles.Text := Format('%-2.6g ', [Lapx[PapirCB.ItemIndex, Egyseg]]);
+      MainForm.Lapmagas.Text := Format('%-2.6g ', [Lapy[PapirCB.ItemIndex, Egyseg]]);
+      Lx := Lapx[PapirCB.ItemIndex, 3];
+      Ly := Lapy[PapirCB.ItemIndex, 3];
+    end;
+  end;
 
 end.

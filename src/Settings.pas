@@ -130,7 +130,7 @@ begin
   PartSzinCB.Itemindex := 0;
   HatarSzinCB.Itemindex := 0;
   ToSzinCB.Itemindex := 0;
-  CsaladCB.Itemindex:=0;
+  CsaladCB.Itemindex := 0;
 
   Vet[0]:='Postel-féle';
   Vet[1]:='Lambert-féle';
@@ -243,12 +243,12 @@ begin
     end;
   end;
 
-   fi1:=fi1alap;
-   fi2:=fi2alap;
-   fin:=finalap;
-   fia:=fiaalap;
+   fi1 := DEF_FI1;
+   fi2 := DEF_FI2;
+   fin := DEF_FIN;
+   fia := DEF_FIA;
    if CsaladCB.Itemindex = 2 then
-     fin:=finalap2;
+     fin := DEF_FIN2;
 
    ParametersForm1.Fok1.Text:=IntToStr(fi1);
    ParametersForm1.Fok2.Text:=IntToStr(fi2);
@@ -268,54 +268,65 @@ end;
 
 procedure TSettingsForm.VetuletCBChange(Sender: TObject);
 begin
-  Vetvalt:=True;
-  Lupe:=False;
-  Lapba:=False;
-  Sajt:=False;
-  Crop:=False;
-  origomas:=False;
+  Vetvalt := True;
+  Lupe := False;
+  Lapba := False;
+  Sajt := False;
+  Crop := False;
+  origomas := False;
 
   if VetuletCB.Itemindex > 19 then
     AktivVetulet := 80 + 20 * CsaladCB.Itemindex + VetuletCB.Itemindex
   else
     AktivVetulet := 20 * CsaladCB.Itemindex + VetuletCB.Itemindex;
-  if AktivVetulet in [2,3,20..27,41,43,44,45,46,60,62,63,64,65,69,89,102,107,94,95,98,109,110]
-   then JellemBtn.Enabled:=True
-   else JellemBtn.Enabled:=False;
+
+  JellemBtn.Enabled := (AktivVetulet in [2,3,20..27,41,43,44,45,46,60,62,63,64,65,69,89,102,107,94,95,98,109,110]);
+
   case AktivVetulet of
-  46: begin
-       ParametersForm1.VegtelenChk.Checked:=False;
-       ParametersForm1.Foklabela.Enabled:=True;
-       ParametersForm1.Foka.Enabled:=True;
-      end;
-  69: fik:=fikalap4;
-  89: begin
-       fis:=60;
-       ParametersForm2.Finbox.Clear;
-       ParametersForm2.Finbox.Items.Add('60');
-       ParametersForm2.Finbox.Items.Add('70');
-       ParametersForm2.Finbox.Itemindex:=0;
-      end;
-  102:begin
-       fis:=40;
-       ParametersForm2.Finbox.Clear;
-       ParametersForm2.Finbox.Items.Add('40');
-       ParametersForm2.Finbox.Items.Add('50,467');
-       ParametersForm2.Finbox.Itemindex:=0;
-      end;
+  46:
+    begin
+      ParametersForm1.VegtelenChk.Checked := False;
+      ParametersForm1.Foklabela.Enabled := True;
+      ParametersForm1.Foka.Enabled := True;
+    end;
+  69:
+    fik := DEF_FIK4;
+  89:
+    begin
+      fis := 60;
+      ParametersForm2.Finbox.Clear;
+      ParametersForm2.Finbox.Items.Add('60');
+      ParametersForm2.Finbox.Items.Add('70');
+      ParametersForm2.Finbox.Itemindex := 0;
+    end;
+  102:
+    begin
+      fis := 40;
+      ParametersForm2.Finbox.Clear;
+      ParametersForm2.Finbox.Items.Add('40');
+      ParametersForm2.Finbox.Items.Add('50,467');
+      ParametersForm2.Finbox.Itemindex := 0;
+    end;
   end;
+
   case AktivVetulet of
-  2,22,23,27: fik:=fikalap1;
-  3,44,45,46: fik:=fikalap2;
-  62,63,64: fia:=fiaalap2;
-  65: fik:=fikalap3;
-  69: fia:=fiaalap3;
-  107: fin:=finalap3;
+  2,22,23,27:
+    fik := DEF_FIK1;
+  3,44,45,46:
+    fik := DEF_FIK2;
+  62,63,64:
+    fia := DEF_FIA2;
+  65:
+    fik := DEF_FIK3;
+  69:
+    fia := DEF_FIA3;
+  107:
+    fin := DEF_FIN3;
   109,110:
-   begin
-     fia2:=fia2alap;
-     fih:=fihalap;
-   end;
+    begin
+      fiah := DEF_FIAH;
+      fih := DEF_FIH;
+    end;
   end;
 end;
 
@@ -558,13 +569,13 @@ end;
 
 procedure TSettingsForm.JellemBtnClick(Sender: TObject);
 begin
-  if AktivVetulet in [89,102] then
+  if AktivVetulet in [89,102] then // Érdi-Krausz-féle, Winkel-féle
     ParametersForm2.ShowModal
-  else if AktivVetulet in [94,95,98] then
+  else if AktivVetulet in [94,95,98] then // Apianus I., Bacon-féle, Collignon-féle
     ParametersForm3.Showmodal
-  else if AktivVetulet in [109,110] then
+  else if AktivVetulet in [109,110] then // Hullámvetületek
     ParametersForm4.Showmodal
-  else
+  else // Minden egyéb
     ParametersForm1.ShowModal;
 end;
 
