@@ -1998,23 +1998,23 @@ implementation
       PLTMODE :
         begin
           // Ábra mentése folyamatban
-          ProgressForm.ProgressLabel.Visible  := False;
-          ProgressForm.ProgressLabel2.Visible := True;
-          ProgressForm.ProgressLabel3.Visible := False;
+          ProgressForm.DrawProgressLab.Visible  := False;
+          ProgressForm.PltProgressLab.Visible := True;
+          ProgressForm.PrintProgressLab.Visible := False;
         end;
       PRINTMODE :
         begin
           // Ábra nyomtatása folyamatban
-          ProgressForm.ProgressLabel.Visible  := False;
-          ProgressForm.ProgressLabel2.Visible := False;
-          ProgressForm.ProgressLabel3.Visible := True;
+          ProgressForm.DrawProgressLab.Visible  := False;
+          ProgressForm.PltProgressLab.Visible := False;
+          ProgressForm.PrintProgressLab.Visible := True;
         end;
       else
         begin
           // Ábra frissítése folyamatban
-          ProgressForm.ProgressLabel.Visible  := True;
-          ProgressForm.ProgressLabel2.Visible := False;
-          ProgressForm.ProgressLabel3.Visible := False;
+          ProgressForm.DrawProgressLab.Visible  := True;
+          ProgressForm.PltProgressLab.Visible := False;
+          ProgressForm.PrintProgressLab.Visible := False;
         end;
       end;
 
