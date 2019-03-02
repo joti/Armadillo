@@ -2,54 +2,54 @@ unit Parameters2;
 
 interface
 
-uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls;
+  uses
+    Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+    StdCtrls;
 
-type
-  TParametersForm2 = class(TForm)
-    OKBtn: TButton;
-    Finbox: TComboBox;
-    Foklabel2: TLabel;
-    Finlabel: TLabel;
-    pmlabel2: TLabel;
-    procedure FormShow(Sender: TObject);
-    procedure OKBtnClick(Sender: TObject);
-  private
-    { Private declarations }
-  public
-    { Public declarations }
-  end;
+  type
+    TParametersForm2 = class(TForm)
+      OKBtn: TButton;
+      FinCB: TComboBox;
+      Foklabel2: TLabel;
+      FinLab: TLabel;
+      PMLab: TLabel;
+      procedure FormShow(Sender: TObject);
+      procedure OKBtnClick(Sender: TObject);
+    private
+      { Private declarations }
+    public
+      { Public declarations }
+    end;
 
-var
-  ParametersForm2: TParametersForm2;
+  var
+    ParametersForm2: TParametersForm2;
 
 implementation
 
-{$R *.DFM}
+  {$R *.DFM}
 
-uses Main;
+  uses Main;
 
-procedure TParametersForm2.FormShow(Sender: TObject);
-begin
-  case AktivVetulet of
-  89:
-   begin
-     Finlabel.caption:='A két vetület közötti határoló szélesség:';
-     Finlabel.Left:=42;
-   end;
-  102:
-   begin
-     Finlabel.caption:='A hengervetület hossztartó paraleljeinek szélessége:';
-     Finlabel.Left:=8;
-   end;
+  procedure TParametersForm2.FormShow(Sender: TObject);
+  begin
+    case AktivVetulet of
+    89: // Érdi-Krausz-féle
+      begin
+        FinLab.Caption := 'A két vetület közötti határoló szélesség:';
+        FinLab.Left := 42;
+      end;
+    102: // Winkel-féle
+      begin
+        FinLab.Caption := 'A hengervetület hossztartó paraleljeinek szélessége:';
+        FinLab.Left := 8;
+      end;
+    end;
   end;
-end;
 
-procedure TParametersForm2.OKBtnClick(Sender: TObject);
-begin
-  fis:=strtofloat(Finbox.Items[Finbox.Itemindex]);
-  ParametersForm2.Close;
-end;
+  procedure TParametersForm2.OKBtnClick(Sender: TObject);
+  begin
+    fis := StrToFloat(FinCB.Items[FinCB.Itemindex]);
+    ParametersForm2.Close;
+  end;
 
 end.

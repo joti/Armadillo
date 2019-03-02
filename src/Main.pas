@@ -138,20 +138,22 @@ interface
     Igazigaz: Boolean=False;
     Sajt: Boolean=False;
     Sajt3: Boolean=False;
-    fel: Boolean=True;
     egyik, masik, StartPoint, EndPoint: TPoint;
     Zoomol: Boolean=False;
     Crop: Boolean=False;
     Elso: Boolean=True;
     CropScrollHorz, CropScrollVert: Integer;
+
+    // Vetületi paraméterek
     fi1, fi2, fin: Byte;
     fik, fih: SmallInt;
     fis, fia, fiah: Double;
-    Vetvalt: Boolean=True;
-    NeedSaveIni: Boolean=False;
-    Lapba: Boolean=False;
-    Plusz: String;
-    Egyenes: Boolean = False;
+    Felgomb : Boolean = True; // Az ábrázolt terület félgömb
+
+    Vetvalt : Boolean=True;
+    Lapba : Boolean=False;
+    Plusz : String;
+    Egyenes : Boolean = False;
     AHeight, AWidth : Integer;
     Egyseg : Byte = 0; // Kiválasztott mértékegység
 
@@ -387,8 +389,8 @@ implementation
     FormPos1.x := Left;
     FormPos1.y := Top;
     UjForm := TSettingsForm.Create(Application);
-    UjForm.Top := Top+24+(ClientHeight-ScrollBox1.Height);
-    UjForm.Left := Left+5;
+    UjForm.Top := Top + 35 + (ClientHeight - ScrollBox1.Height);
+    UjForm.Left := Left + 13;
 
     Lapx[0,0] := 1189;Lapy[0,0] := 841;
     Lapx[1,0] := 841;Lapy[1,0] := 594;
@@ -581,7 +583,7 @@ implementation
             for o := 0 to 14 do begin
               for i := 0 to 14 do begin
                 if Abra.Canvas.Pixels[m.x + i - 7, m.y + o - 7] = clNavy then
-                  if OptionsForm.Lapmilyen.ItemIndex = 0 then
+                  if OptionsForm.LapRajzCB.ItemIndex = 0 then
                     Abra.Canvas.Pixels[m.x + i - 7, m.y + o - 7] := clWhite
                   else if (ValosX(m.x + i - 7) < Lx / 2) and (ValosX(m.x + i - 7) > -Lx / 2)
                   and (ValosY(m.y + o - 7) < Ly / 2) and (ValosY(m.y + o - 7) > -Ly / 2) then
@@ -1035,7 +1037,7 @@ implementation
     107: betan := arcus(fin);
     end;
     if AktivVetulet in [27,46] then
-      if ParametersForm1.Iranybox.ItemIndex=0 then beta0 := fia else beta0 := -fia;
+      if ParametersForm1.IranyCB.ItemIndex=0 then beta0 := fia else beta0 := -fia;
    end;
 
    procedure vetites(var aX,aY:integer);
@@ -1415,7 +1417,7 @@ implementation
            end;
        94: begin
             bY := Fc;
-            if (Lc=0) or ((abs(Fc)>arcus(89.9)) and ((fel) or (abs(Lc)<arcus(91)))) then bX := 0
+            if (Lc=0) or ((abs(Fc)>arcus(89.9)) and ((Felgomb) or (abs(Lc)<arcus(91)))) then bX := 0
             else
              begin
               p := (sqr(Pi/2)+sqr(Lc))/2/abs(Lc);
@@ -1424,7 +1426,7 @@ implementation
            end;
        95: begin
             bY := Pi/2*sin(Fc);
-            if (abs(Lc)<0.001) or ((abs(Fc)>arcus(89.9)) and ((fel) or (abs(Lc)<arcus(91)))) then bX := 0
+            if (abs(Lc)<0.001) or ((abs(Fc)>arcus(89.9)) and ((Felgomb) or (abs(Lc)<arcus(91)))) then bX := 0
             else
              begin
               bb := (sqr(Pi/2)/abs(Lc)+abs(Lc))/2;
@@ -1640,11 +1642,11 @@ implementation
 
         // Apianus I., Bacon-féle, Collignon-féle vetület
         if (AktivVetulet in [94,95,98]) then begin
-          if (fel) and (la12>arcus(90)) then begin
+          if (Felgomb) and (la12>arcus(90)) then begin
             x12 := Trunc(hataron(x1, x2, Lca, Lc, Arcus(90)));
             y12 := Trunc(hataron(y1, y2, Lca, Lc, Arcus(90)));
           end;
-          if (fel) and (la12 < -Arcus(90)) then begin
+          if (Felgomb) and (la12 < -Arcus(90)) then begin
             x12 := Trunc(hataron(x1, x2, Lca, Lc, -Arcus(90)));
             y12 := Trunc(hataron(y1, y2, Lca, Lc, -Arcus(90)));
           end;
@@ -1674,7 +1676,7 @@ implementation
         or ((AktivVetulet <> 65) and ((Fc < Arcus(minfi)) or ((AktivVetulet in [44,45]) and (Fc > -Arcus(minfi)))))
         or ( AktivVetulet =  65) and (abs(Lc) > Arcus(minfi))
         or ((AktivVetulet = 107) and (Fc < beta0))
-        or ((AktivVetulet in [94,95,98]) and (fel) and (abs(Lc) > Arcus(90))) then
+        or ((AktivVetulet in [94,95,98]) and (Felgomb) and (abs(Lc) > Arcus(90))) then
           result := True
         else
           result := False;
@@ -2221,7 +2223,7 @@ implementation
               q := 0;
 
               for i := 0 to 1 do begin
-                if (AktivVetulet in [94,95,98]) and (fel) then
+                if (AktivVetulet in [94,95,98]) and (Felgomb) then
                   Lc := (2 * i - 1) * arcus(89.999)
                 else
                   Lc := (2 * i - 1) * arcus(179.999);
@@ -2256,7 +2258,7 @@ implementation
         end;
       end;
 
-      if (OptionsForm.Maigazit.Checked and not Sajt) or Igazigaz then begin
+      if (OptionsForm.MaigazitChk.Checked and not Sajt) or Igazigaz then begin
         if (Lx * (Szazalek / 100) < Minmargomi) or (Ly * (Szazalek / 100) < Minmargomi) then begin
           margox := Lx - 2 * Minmargomi;
           margoy := Ly - 2 * Minmargomi;
@@ -2316,7 +2318,7 @@ implementation
       PrevScale := Scale;
 
       if not origomas then begin
-        if OptionsForm.Kozepigazit.Checked then begin
+        if OptionsForm.KozepigazitChk.Checked then begin
           OMoveX := Trunc((Baltop + Jobbtop) / 2);
           OMoveY := Trunc((Fenntop + Lenntop) / 2);
         end else begin
@@ -2327,7 +2329,7 @@ implementation
 
       if (Mode = DRAWMODE) then begin
 
-        if OptionsForm.Abraigazit.Checked then begin
+        if OptionsForm.AbraigazitChk.Checked then begin
           Valos.Height := Trunc(Ly / 1000 * PPI);
           Valos.Width := Trunc(Lx / 1000 * PPI);
 
@@ -2366,7 +2368,7 @@ implementation
         Valos.Width := Valos.Width + Trunc(100 * Valos.Width / 1600);
         Valos.Height := Valos.Height + Trunc(70 * Valos.Height / 1100);
 
-        if OptionsForm.Autozoom.Checked and not Lupe then begin
+        if OptionsForm.AutozoomChk.Checked and not Lupe then begin
           Zoom := Trunc(100 * (ScrollBox1.Width - 4) / Valos.Width);
           AWidth := ScrollBox1.Width - 4;
           AHeight := ScrollBox1.Height - 4;
@@ -2448,9 +2450,9 @@ implementation
       ProgressForm.ProgressBar1.Position := 3;
 
       // lap kirajzolása
-      if (OptionsForm.LapOn.Checked) and (Mode = DRAWMODE) then begin
+      if (OptionsForm.LapOnChk.Checked) and (Mode = DRAWMODE) then begin
         Bitmap.Canvas.Pen.Color := clLtGray;
-        if OptionsForm.Lapmilyen.ItemIndex = 1 then
+        if OptionsForm.LapRajzCB.ItemIndex = 1 then
           Bitmap.Canvas.Brush.Color := clLtGray
         else
           Bitmap.Canvas.Brush.Color := clWhite;
@@ -2468,7 +2470,7 @@ implementation
 
           {segédfokhálózat}
           if UjForm.Segedchk.Checked and UjForm.Segedchk.Enabled then begin
-            Vastagado(OptionsForm.Vas5.Value);
+            Vastagado(OptionsForm.SegedVasEd.Value);
             Ferde := False;
             Szinado(UjForm.SegSzinCB);
 
@@ -2558,9 +2560,9 @@ implementation
               Writeln(DebugFile, i, ' ', La);
 
               if Almost(La, 0) then
-                Vastagado(OptionsForm.Vas3.Value)
+                Vastagado(OptionsForm.KezdoVasEd.Value)
               else
-                Vastagado(OptionsForm.Vas1.Value);
+                Vastagado(OptionsForm.HaloVasEd.Value);
 
               repeat
                 q := q + 1;
@@ -2600,7 +2602,7 @@ implementation
             Tatuado(UjForm.ParReszletCB.ItemIndex);
             if UjForm.TeritoChk.Checked then begin
               for i := 1 to 4 do begin
-                Vastagado(OptionsForm.Vas4.Value);
+                Vastagado(OptionsForm.TeritoVasEd.Value);
                 case i of
                 1: Fi := 66.5;
                 2: Fi := 23.5;
@@ -2625,9 +2627,9 @@ implementation
 
               Fi := ParSurusegFok * (89 div ParSurusegFok) - (i - 1) * ParSurusegFok + 0.01;
               if Almost(Fi, 0) then
-                Vastagado(OptionsForm.Vas2.Value)
+                Vastagado(OptionsForm.EgyenlitoVasEd.Value)
               else
-                Vastagado(OptionsForm.Vas1.Value);
+                Vastagado(OptionsForm.HaloVasEd.Value);
 
               paralelkor;
               Progpos := progpos + 100 / Prog * 7 / (mike + 1);
@@ -2647,7 +2649,7 @@ implementation
 
           // határoló vonalak - ezeket a fokhálózat megjelenítésétõl függetlenül kirajzoljuk
           Ferde := True;
-          Vastagado(OptionsForm.Vas1.Value);
+          Vastagado(OptionsForm.HaloVasEd.Value);
           Tatuado(UjForm.ParReszletCB.ItemIndex);
 
           case Csalad of
@@ -2750,7 +2752,7 @@ implementation
 
                 if AktivVetulet = 65 then
                   Lc := (2 * i - 1) * Arcus(minfi)
-                else if (AktivVetulet in [94,95,98]) and (fel) then
+                else if (AktivVetulet in [94,95,98]) and (Felgomb) then
                   Lc := (2 * i - 1) * Arcus(89.999)
                 else
                   Lc := (2 * i - 1) * Arcus(179.999);
@@ -2847,7 +2849,7 @@ implementation
         {tengerpartok kirajzolása}
         if LayersForm.RetegBox.Items[j] = GetLayerName('PART') then begin
           if UjForm.PartChk.Checked then begin
-            Vastagado(OptionsForm.Vas6.Value);
+            Vastagado(OptionsForm.PartVasEd.Value);
             Szinado(Ujform.PartSzinCB);
 
             AssignFile(txt,OptionsForm.parttxt.Text);
@@ -2866,7 +2868,7 @@ implementation
         {országhatárok kirajzolása}
         if LayersForm.RetegBox.Items[j] = GetLayerName('HATAR') then begin
           if UjForm.HatarChk.Checked then begin
-            Vastagado(OptionsForm.Vas7.Value);
+            Vastagado(OptionsForm.HatarVasEd.Value);
             Szinado(Ujform.HatarSzinCB);
 
             AssignFile(txt,OptionsForm.hatartxt.Text);
@@ -2885,7 +2887,7 @@ implementation
         {tavak kirajzolása}
         if LayersForm.RetegBox.Items[j] = GetLayerName('TO') then begin
           if UjForm.Tochk.Checked then begin
-            Vastagado(OptionsForm.Vas8.Value);
+            Vastagado(OptionsForm.ToVasEd.Value);
             Szinado(Ujform.ToSzinCB);
 
             AssignFile(txt,OptionsForm.totxt.Text);
@@ -2935,7 +2937,7 @@ implementation
       if Mode = DRAWMODE then
         Abra.Picture.Graphic := Bitmap;
 
-      if not OptionsForm.Kozepigazit.Checked then
+      if not OptionsForm.KozepigazitChk.Checked then
         KozepreBtn.Enabled := True;
 
       if Elso then
@@ -3144,21 +3146,21 @@ implementation
           IniFile.WriteString ('Adatbazis', 'Partok', OptionsForm.parttxt.Text);
           IniFile.WriteString ('Adatbazis', 'Hatarok', OptionsForm.hatartxt.Text);
           IniFile.WriteString ('Adatbazis', 'Tavak', OptionsForm.totxt.Text);
-          IniFile.WriteBool   ('Meretezes', 'Abraigazitas', OptionsForm.Abraigazit.Checked);
-          IniFile.WriteBool   ('Meretezes', 'Maigazitas', OptionsForm.Maigazit.Checked);
-          IniFile.WriteBool   ('Meretezes', 'Autozoom', OptionsForm.Autozoom.Checked);
-          IniFile.WriteBool   ('Meretezes', 'Kozepreigazitas', OptionsForm.Kozepigazit.Checked);
-          IniFile.WriteBool   ('Megjelenites', 'Lap', OptionsForm.LapOn.Checked);
-          IniFile.WriteInteger('Megjelenites', 'Laphogyan', OptionsForm.Lapmilyen.ItemIndex);
+          IniFile.WriteBool   ('Meretezes', 'Abraigazitas', OptionsForm.AbraigazitChk.Checked);
+          IniFile.WriteBool   ('Meretezes', 'Maigazitas', OptionsForm.MaigazitChk.Checked);
+          IniFile.WriteBool   ('Meretezes', 'Autozoom', OptionsForm.AutozoomChk.Checked);
+          IniFile.WriteBool   ('Meretezes', 'Kozepreigazitas', OptionsForm.KozepigazitChk.Checked);
+          IniFile.WriteBool   ('Megjelenites', 'Lap', OptionsForm.LapOnChk.Checked);
+          IniFile.WriteInteger('Megjelenites', 'Laphogyan', OptionsForm.LapRajzCB.ItemIndex);
           IniFile.WriteBool   ('Megjelenites', 'Hosszuvonal', OptionsForm.HosszuChk.Checked);
-          IniFile.WriteInteger('Megjelenites', 'Fokhalozat', OptionsForm.Vas1.Value);
-          IniFile.WriteInteger('Megjelenites', 'Egyenlito', OptionsForm.Vas2.Value);
-          IniFile.WriteInteger('Megjelenites', 'Kezdomeridian', OptionsForm.Vas3.Value);
-          IniFile.WriteInteger('Megjelenites', 'Teritok', OptionsForm.Vas4.Value);
-          IniFile.WriteInteger('Megjelenites', 'Segedfokhalozat', OptionsForm.Vas5.Value);
-          IniFile.WriteInteger('Megjelenites', 'Partok', OptionsForm.Vas6.Value);
-          IniFile.WriteInteger('Megjelenites', 'Hatarok', OptionsForm.Vas7.Value);
-          IniFile.WriteInteger('Megjelenites', 'Tavak', OptionsForm.Vas8.Value);
+          IniFile.WriteInteger('Megjelenites', 'Fokhalozat', OptionsForm.HaloVasEd.Value);
+          IniFile.WriteInteger('Megjelenites', 'Egyenlito', OptionsForm.EgyenlitoVasEd.Value);
+          IniFile.WriteInteger('Megjelenites', 'Kezdomeridian', OptionsForm.KezdoVasEd.Value);
+          IniFile.WriteInteger('Megjelenites', 'Teritok', OptionsForm.TeritoVasEd.Value);
+          IniFile.WriteInteger('Megjelenites', 'Segedfokhalozat', OptionsForm.SegedVasEd.Value);
+          IniFile.WriteInteger('Megjelenites', 'Partok', OptionsForm.PartVasEd.Value);
+          IniFile.WriteInteger('Megjelenites', 'Hatarok', OptionsForm.HatarVasEd.Value);
+          IniFile.WriteInteger('Megjelenites', 'Tavak', OptionsForm.ToVasEd.Value);
           if PageForm.PapirCB.ItemIndex < 6 then
             IniFile.WriteInteger('Papir', 'Meret', PageForm.PapirCB.ItemIndex);
           IniFile.WriteBool   ('Papir', 'Tajolas', PageForm.AlloBtn.Checked);

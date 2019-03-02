@@ -10,47 +10,47 @@ interface
       PageControl1: TPageControl;
       TabSheet1: TTabSheet;
       TabSheet2: TTabSheet;
-      Maigazit: TCheckBox;
-      Abraigazit: TCheckBox;
+    MaigazitChk: TCheckBox;
+    AbraigazitChk: TCheckBox;
       OKBtn: TButton;
-      Autozoom: TCheckBox;
-      Kozepigazit: TCheckBox;
-      Margolabel: TLabel;
-      Lapszazalek: TLabel;
+    AutozoomChk: TCheckBox;
+    KozepigazitChk: TCheckBox;
+    MargoLab: TLabel;
+    LapszazalekLab: TLabel;
       SzazalekEd: TEdit;
-      Szazaleklabel: TLabel;
-      Legalabb: TLabel;
+    SzazalekLab: TLabel;
+    LegalabbLab: TLabel;
       LegalabbEd: TEdit;
-      KerekitLabel: TLabel;
+    KerekitLab: TLabel;
       KerekitesCB: TComboBox;
       TabSheet3: TTabSheet;
-      LapOn: TCheckBox;
-      Lapmilyen: TComboBox;
+    LapOnChk: TCheckBox;
+    LapRajzCB: TComboBox;
       VastagBox: TGroupBox;
-      Halovas: TLabel;
-      Egyenlitovas: TLabel;
-      Teritovas: TLabel;
-      Segedvas: TLabel;
-      Partvas: TLabel;
-      Orszagvas: TLabel;
-      Tovas: TLabel;
-      Pont1: TLabel;
-      Vas1: TSpinEdit;
-      Vas2: TSpinEdit;
-      Vas3: TSpinEdit;
-      Vas4: TSpinEdit;
-      Vas5: TSpinEdit;
-      Vas6: TSpinEdit;
-      Vas7: TSpinEdit;
-      Pont2: TLabel;
-      Pont3: TLabel;
-      Pont4: TLabel;
-      Pont5: TLabel;
-      Pont6: TLabel;
-      Pont7: TLabel;
-      Kezdovas: TLabel;
-      Vas8: TSpinEdit;
-      Label4: TLabel;
+    HaloVasLab: TLabel;
+    EgyenlitoVasLab: TLabel;
+    TeritoVasLab: TLabel;
+    SegedVasLab: TLabel;
+    PartVasLab: TLabel;
+    HatarVasLab: TLabel;
+    ToVasLab: TLabel;
+    Pont1Lab: TLabel;
+    HaloVasEd: TSpinEdit;
+    EgyenlitoVasEd: TSpinEdit;
+    KezdoVasEd: TSpinEdit;
+    TeritoVasEd: TSpinEdit;
+    SegedVasEd: TSpinEdit;
+    PartVasEd: TSpinEdit;
+    HatarVasEd: TSpinEdit;
+    Pont2Lab: TLabel;
+    Pont3Lab: TLabel;
+    Pont4Lab: TLabel;
+    Pont5Lab: TLabel;
+    Pont6Lab: TLabel;
+    Pont7Lab: TLabel;
+    KezdoVasLab: TLabel;
+    ToVasEd: TSpinEdit;
+    Pont8Lab: TLabel;
       GroupBox1: TGroupBox;
       totxt: TEdit;
       hatartxt: TEdit;
@@ -64,7 +64,7 @@ interface
       OpenDialog1: TOpenDialog;
       HosszuChk: TCheckBox;
       procedure OKBtnClick(Sender: TObject);
-      procedure MaigazitClick(Sender: TObject);
+      procedure MaigazitChkClick(Sender: TObject);
       procedure LegalabbEdKeyPress(Sender: TObject; var Key: Char);
       procedure LegalabbEdExit(Sender: TObject);
       procedure SzazalekEdKeyPress(Sender: TObject; var Key: Char);
@@ -72,21 +72,21 @@ interface
       procedure PartfileBtnClick(Sender: TObject);
       procedure HatarfileBtnClick(Sender: TObject);
       procedure TofileBtnClick(Sender: TObject);
-      procedure AbraigazitClick(Sender: TObject);
+      procedure AbraigazitChkClick(Sender: TObject);
       procedure FormCreate(Sender: TObject);
-      procedure AutozoomClick(Sender: TObject);
-      procedure KozepigazitClick(Sender: TObject);
-      procedure LapOnClick(Sender: TObject);
+      procedure AutozoomChkClick(Sender: TObject);
+      procedure KozepigazitChkClick(Sender: TObject);
+      procedure LapOnChkClick(Sender: TObject);
       procedure HosszuChkClick(Sender: TObject);
-      procedure LapmilyenChange(Sender: TObject);
-      procedure Vas1Change(Sender: TObject);
-      procedure Vas2Change(Sender: TObject);
-      procedure Vas3Change(Sender: TObject);
-      procedure Vas4Change(Sender: TObject);
-      procedure Vas5Change(Sender: TObject);
-      procedure Vas6Change(Sender: TObject);
-      procedure Vas7Change(Sender: TObject);
-      procedure Vas8Change(Sender: TObject);
+      procedure LapRajzCBChange(Sender: TObject);
+      procedure HaloVasEdChange(Sender: TObject);
+      procedure EgyenlitoVasEdChange(Sender: TObject);
+      procedure KezdoVasEdChange(Sender: TObject);
+      procedure TeritoVasEdChange(Sender: TObject);
+      procedure SegedVasEdChange(Sender: TObject);
+      procedure PartVasEdChange(Sender: TObject);
+      procedure HatarVasEdChange(Sender: TObject);
+      procedure ToVasEdChange(Sender: TObject);
       procedure SzazalekEdChange(Sender: TObject);
       procedure LegalabbEdChange(Sender: TObject);
       procedure KerekitesCBChange(Sender: TObject);
@@ -111,28 +111,6 @@ implementation
 
   uses Page, Main, General;
 
-  function szamvizsgalo(szam : String) : Boolean;
-  var i: Byte;
-  begin
-    result := True;
-    for i := Length(szam) downto 1 do
-      if not (szam[i] in ['0'..'9',',']) then
-        szamhossz := i - 1;
-
-    if szamhossz = 0 then
-      result := False
-    else if szamhossz = 1 then
-      if szam[1] = ',' then
-        result := False;
-
-    if szamhossz > 1 then begin
-      if szam[1] = ',' then
-        result := False;
-      if (szam[1] = '0') and (szam[2] <> ',') then
-        result := False;
-    end;
-  end;
-
   procedure TOptionsForm.FormCreate(Sender: TObject);
   begin
     // koordinátafájlok
@@ -141,28 +119,28 @@ implementation
     totxt.Text    := IniFile.ReadString('Adatbazis', 'Tavak', 'to.txt');
 
     // méretezés, igazítás
-    Abraigazit.Checked      := IniFile.ReadBool   ('Meretezes', 'Abraigazitas'   , True);
-    Maigazit.Checked        := IniFile.ReadBool   ('Meretezes', 'Maigazitas'     , True);
-    Autozoom.Checked        := IniFile.ReadBool   ('Meretezes', 'Autozoom'       , True);
-    Kozepigazit.Checked     := IniFile.ReadBool   ('Meretezes', 'Kozepreigazitas', True);
+    AbraigazitChk.Checked   := IniFile.ReadBool   ('Meretezes', 'Abraigazitas'   , True);
+    MaigazitChk.Checked     := IniFile.ReadBool   ('Meretezes', 'Maigazitas'     , True);
+    AutozoomChk.Checked     := IniFile.ReadBool   ('Meretezes', 'Autozoom'       , True);
+    KozepigazitChk.Checked  := IniFile.ReadBool   ('Meretezes', 'Kozepreigazitas', True);
     SzazalekEd.Text         := IniFile.ReadString ('Meretezes', 'Margo1'         , '10');
-    LegalabbEd.Text         := IniFile.ReadString ('Meretezes', 'Margo2'         , '0 ' + SI[Egyseg]);
+    LegalabbEd.Text         := IniFile.ReadString ('Meretezes', 'Margo2'         , '0 ' + UNITS[Egyseg].Code);
     KerekitesCB.Itemindex   := IniFile.ReadInteger('Meretezes', 'Kerekites'      , 1);
 
     // lap megjelenítése
-    LapOn.Checked       := IniFile.ReadBool   ('Megjelenites', 'Lap'         ,True);
-    Lapmilyen.Itemindex := IniFile.ReadInteger('Megjelenites', 'Laphogyan'   ,0);
-    HosszuChk.Checked   := IniFile.ReadBool   ('Megjelenites', 'Hosszuvonal' ,True);
+    LapOnChk.Checked       := IniFile.ReadBool   ('Megjelenites', 'Lap'         ,True);
+    LapRajzCB.Itemindex    := IniFile.ReadInteger('Megjelenites', 'Laphogyan'   ,0);
+    HosszuChk.Checked      := IniFile.ReadBool   ('Megjelenites', 'Hosszuvonal' ,True);
 
     // vonalvastagságok
-    Vas1.Value := IniFile.ReadInteger('Megjelenites', 'Fokhalozat'      ,1);
-    Vas2.Value := IniFile.ReadInteger('Megjelenites', 'Egyenlito'       ,2);
-    Vas3.Value := IniFile.ReadInteger('Megjelenites', 'Kezdomeridian'   ,2);
-    Vas4.Value := IniFile.ReadInteger('Megjelenites', 'Teritok'         ,1);
-    Vas5.Value := IniFile.ReadInteger('Megjelenites', 'Segedfokhalozat' ,1);
-    Vas6.Value := IniFile.ReadInteger('Megjelenites', 'Partok'          ,1);
-    Vas7.Value := IniFile.ReadInteger('Megjelenites', 'Hatarok'         ,1);
-    Vas8.Value := IniFile.ReadInteger('Megjelenites', 'Tavak'           ,1);
+    HaloVasEd.Value      := IniFile.ReadInteger('Megjelenites', 'Fokhalozat'      ,1);
+    EgyenlitoVasEd.Value := IniFile.ReadInteger('Megjelenites', 'Egyenlito'       ,2);
+    KezdoVasEd.Value     := IniFile.ReadInteger('Megjelenites', 'Kezdomeridian'   ,2);
+    TeritoVasEd.Value    := IniFile.ReadInteger('Megjelenites', 'Teritok'         ,1);
+    SegedVasEd.Value     := IniFile.ReadInteger('Megjelenites', 'Segedfokhalozat' ,1);
+    PartVasEd.Value      := IniFile.ReadInteger('Megjelenites', 'Partok'          ,1);
+    HatarVasEd.Value     := IniFile.ReadInteger('Megjelenites', 'Hatarok'         ,1);
+    ToVasEd.Value        := IniFile.ReadInteger('Megjelenites', 'Tavak'           ,1);
   end;
 
   procedure TOptionsForm.OKBtnClick(Sender: TObject);
@@ -170,12 +148,12 @@ implementation
     Close;
   end;
 
-  procedure TOptionsForm.MaigazitClick(Sender: TObject);
+  procedure TOptionsForm.MaigazitChkClick(Sender: TObject);
   begin
    NeedSaveIni:=True;
    Vetvalt:=True;
 
-   if not Elso and not Maigazit.Checked then
+   if not Elso and not MaigazitChk.Checked then
      MainForm.LaphozBtn.Enabled := True;
   end;
 
@@ -185,21 +163,24 @@ implementation
   end;
 
   procedure TOptionsForm.LegalabbEdExit(Sender: TObject);
-  var i:Double;
+  var
+    I : Double;
+    NumLength : Integer;
   begin
-    if Szamvizsgalo(LegalabbEd.Text) then begin
-      Minmargomi := Convert(Egyseg, 3, StrToFloat(Copy(LegalabbEd.Text, 1, szamhossz)));
+    if NumberChk(LegalabbEd.Text, NumLength) then begin
+      Minmargomi := Convert(Egyseg, 3, StrToFloat(Copy(LegalabbEd.Text, 1, NumLength)));
       if Lx < Ly then
-        i := Lx
+        I := Lx
       else
-        i := Ly;
-      if Minmargomi >= i/2 then begin
+        I := Ly;
+
+      if Minmargomi >= I / 2 then begin
         LegalabbEd.SetFocus;
-        MessageDlg('Túl nagy méret',mtInformation,[mbOK],0);
+        MessageDlg('Túl nagy méret', mtInformation, [mbOK], 0);
       end;
     end else begin
       LegalabbEd.SetFocus;
-      MessageDlg('Érvénytelen méret',mtInformation,[mbOK],0);
+      InvalidValueMsg;
     end
   end;
 
@@ -256,24 +237,24 @@ implementation
     end;
   end;
 
-  procedure TOptionsForm.AbraigazitClick(Sender: TObject);
+  procedure TOptionsForm.AbraigazitChkClick(Sender: TObject);
   begin
     NeedSaveIni := True;
     Vetvalt := True;
     Sajt3 := True;
   end;
 
-  procedure TOptionsForm.AutozoomClick(Sender: TObject);
+  procedure TOptionsForm.AutozoomChkClick(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.KozepigazitClick(Sender: TObject);
+  procedure TOptionsForm.KozepigazitChkClick(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.LapOnClick(Sender: TObject);
+  procedure TOptionsForm.LapOnChkClick(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
@@ -283,47 +264,47 @@ implementation
     NeedSaveIni := True
   end;
 
-  procedure TOptionsForm.LapmilyenChange(Sender: TObject);
+  procedure TOptionsForm.LapRajzCBChange(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.Vas1Change(Sender: TObject);
+  procedure TOptionsForm.HaloVasEdChange(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.Vas2Change(Sender: TObject);
+  procedure TOptionsForm.EgyenlitoVasEdChange(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.Vas3Change(Sender: TObject);
+  procedure TOptionsForm.KezdoVasEdChange(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.Vas4Change(Sender: TObject);
+  procedure TOptionsForm.TeritoVasEdChange(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.Vas5Change(Sender: TObject);
+  procedure TOptionsForm.SegedVasEdChange(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.Vas6Change(Sender: TObject);
+  procedure TOptionsForm.PartVasEdChange(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.Vas7Change(Sender: TObject);
+  procedure TOptionsForm.HatarVasEdChange(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;
 
-  procedure TOptionsForm.Vas8Change(Sender: TObject);
+  procedure TOptionsForm.ToVasEdChange(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;

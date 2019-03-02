@@ -52,21 +52,6 @@ interface
     DEF_FIAH = 1;   // Hullámvetületek
     DEF_FIH  = 1;   // Hullámvetületek
 
-(*
-    fi1alap = 30;
-    fi2alap = 60;
-    finalap = 45; // Kúpok ill. Bonne
-    finalap2 = 15; // Hengerek
-    finalap3 = 20; // Armadillo
-    fikalap1 = 90; // Sztereografikus sík, szögtartó és perspektív henger
-    fikalap2 = 80; // Gnomonikus
-    fikalap3 = 120; // Szögtartó polikónikus
-    fikalap4 = 0; // Lagrange
-    fiaalap = 0; // Perspektív henger és kúp
-    fiaalap2 = 1; // Polikónikusok
-    fiaalap3 = 2; // Lagrange
-*)
-
   // Mértékegységek
   const UNITS : array[0..3] of TCodeName = (
     (Code: 'mm'; Name: 'milliméter'),
@@ -75,11 +60,12 @@ interface
     (Code: 'mi'; Name: 'ezredinch') );
 
   var
-    NeedComma : Boolean; {Tizedestörtekben a pontok vesszõvé alakítandók}
-    DecSep : String; {Tizedespont vagy -vesszõ}
-    IniFile : TIniFile; {Az alkalmazás ini fájlja}
-    DebugFile : TextFile; {File debugoláshoz}
-    ApplDir : String; {Az alkalmazás könyvtára}
+    NeedComma : Boolean; // Tizedestörtekben a pontok vesszõvé alakítandók
+    DecSep : String; // Tizedespont vagy -vesszõ
+    IniFile : TIniFile; // Az alkalmazás ini fájlja
+    NeedSaveIni : Boolean = False; // Beállítások módosultak, ini fájlba mentés szükséges lehet
+    DebugFile : TextFile; // File debugoláshoz
+    ApplDir : String; // Az alkalmazás könyvtára
 
 implementation
 

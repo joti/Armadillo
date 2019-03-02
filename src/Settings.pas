@@ -250,20 +250,19 @@ begin
    if CsaladCB.Itemindex = 2 then
      fin := DEF_FIN2;
 
-   ParametersForm1.Fok1.Text:=IntToStr(fi1);
-   ParametersForm1.Fok2.Text:=IntToStr(fi2);
-   ParametersForm1.Fokn.Text:=IntToStr(fin);
-   ParametersForm1.Foka.Text:=FloatToStr(fia);
-   ParametersForm1.Iranybox.Itemindex:=0;
-   if not ParametersForm1.Foka.Enabled then
-    begin
-      ParametersForm1.VegtelenChk.Checked:=False;
-      ParametersForm1.Foka.Enabled:=True;
-      ParametersForm1.Foklabela.Enabled:=True;
-      ParametersForm1.Iranybox.Enabled:=True;
-      ParametersForm1.Iranybox.Itemindex:=0;
-      ParametersForm1.Iranylabel.Enabled:=True;
-    end;
+   ParametersForm1.Fok1Ed.Text := IntToStr(fi1);
+   ParametersForm1.Fok2Ed.Text := IntToStr(fi2);
+   ParametersForm1.FoknEd.Text := IntToStr(fin);
+   ParametersForm1.FokaEd.Text := FloatToStr(fia);
+   ParametersForm1.IranyCB.Itemindex := 0;
+   if not ParametersForm1.FokaEd.Enabled then begin
+     ParametersForm1.VegtelenChk.Checked := False;
+     ParametersForm1.FokaEd.Enabled := True;
+     ParametersForm1.FokaLab.Enabled := True;
+     ParametersForm1.IranyCB.Enabled := True;
+     ParametersForm1.IranyCB.Itemindex := 0;
+     ParametersForm1.IranyLab.Enabled := True;
+   end;
 end;
 
 procedure TSettingsForm.VetuletCBChange(Sender: TObject);
@@ -286,26 +285,26 @@ begin
   46:
     begin
       ParametersForm1.VegtelenChk.Checked := False;
-      ParametersForm1.Foklabela.Enabled := True;
-      ParametersForm1.Foka.Enabled := True;
+      ParametersForm1.FokaLab.Enabled := True;
+      ParametersForm1.FokaEd.Enabled := True;
     end;
   69:
     fik := DEF_FIK4;
   89:
     begin
       fis := 60;
-      ParametersForm2.Finbox.Clear;
-      ParametersForm2.Finbox.Items.Add('60');
-      ParametersForm2.Finbox.Items.Add('70');
-      ParametersForm2.Finbox.Itemindex := 0;
+      ParametersForm2.FinCB.Clear;
+      ParametersForm2.FinCB.Items.Add('60');
+      ParametersForm2.FinCB.Items.Add('70');
+      ParametersForm2.FinCB.Itemindex := 0;
     end;
   102:
     begin
       fis := 40;
-      ParametersForm2.Finbox.Clear;
-      ParametersForm2.Finbox.Items.Add('40');
-      ParametersForm2.Finbox.Items.Add('50,467');
-      ParametersForm2.Finbox.Itemindex := 0;
+      ParametersForm2.FinCB.Clear;
+      ParametersForm2.FinCB.Items.Add('40');
+      ParametersForm2.FinCB.Items.Add('50,467');
+      ParametersForm2.FinCB.Itemindex := 0;
     end;
   end;
 
