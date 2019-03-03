@@ -433,7 +433,7 @@ implementation
       end;
     end;
 
-    if UjForm.CsaladCB.Itemindex = 1 then begin // Valós kúpvetületek
+    if SettingsForm.CsaladCB.Itemindex = 1 then begin // Valós kúpvetületek
       if (fin > 89) then begin
         FoknEd.Setfocus;
         InvalidValueMsg;
@@ -478,7 +478,7 @@ implementation
     fin := DEF_FIN;
     fia := DEF_FIA;
 
-    if UjForm.CsaladCB.Itemindex = 2 then
+    if SettingsForm.CsaladCB.Itemindex = 2 then
       fik := DEF_FIK2;
 
     case AktivVetulet of

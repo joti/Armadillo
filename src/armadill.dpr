@@ -47,7 +47,7 @@ begin
   end;
 
   Nyito.Close;
-  UjForm.Show;
+  SettingsForm.Show;
   Nyito.Free;
   NeedSaveIni := False;
   Application.Run;

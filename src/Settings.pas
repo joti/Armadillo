@@ -109,9 +109,6 @@ type
     { Public declarations }
   end;
 
-var
-  SettingsForm: TSettingsForm;
-
 implementation
 
 {$R *.DFM}
@@ -214,7 +211,7 @@ procedure TSettingsForm.CsaladCBChange(Sender: TObject);
 var h,i,k: byte;
 begin
   Vetvalt := True;
-  Lupe := False;
+  ManZoom := False;
   origomas := False;
 
   for i := 0 to 5 do begin
@@ -268,9 +265,9 @@ end;
 procedure TSettingsForm.VetuletCBChange(Sender: TObject);
 begin
   Vetvalt := True;
-  Lupe := False;
+  ManZoom := False;
+  ManScale := False;
   Lapba := False;
-  Sajt := False;
   Crop := False;
   origomas := False;
 

@@ -19,7 +19,7 @@ interface
       MeretaranyEd: TEdit;
       MillioLab: TLabel;
       NagyitasCB: TComboBox;
-      Nagyitlabel: TLabel;
+      NagyitLab: TLabel;
       ScrollBox1: TScrollBox;
       Abra: TImage;
       MainMenu1: TMainMenu;
@@ -119,27 +119,22 @@ interface
   var
     MainForm: TMainForm;
     Bitmap: TBitmap;
-    Rajzol, Gyik, Lehet, Lupe: Boolean;
-    Lupe2: Boolean=False;
-    Sajt2: Boolean=False;
+    Rajzol, Gyik, Lehet: Boolean;
     Ni, Balszel, Jobbszel, Felsoszel, Alsoszel: Integer;
     OrigoX, OrigoY: Integer;
-    Baltop, Jobbtop, Fenntop, Lenntop: Integer;
     AktivVetulet: Byte=0;
     Szamhossz2: Byte;
     Vet: array[0..220] of string;
     j,l, Winni: Byte;
-    UjForm: TSettingsForm;
-    Ini, Filesv, txt: Textfile;
+    SettingsForm: TSettingsForm;
+    Ini, txt: TextFile;
     SI: array[0..4] of String;
     Lapx,Lapy: Array[0..6,0..6] of Double;
     Lx,Ly: Double;
     origomas: Boolean=False;
     Igazigaz: Boolean=False;
-    Sajt: Boolean=False;
     Sajt3: Boolean=False;
     egyik, masik, StartPoint, EndPoint: TPoint;
-    Zoomol: Boolean=False;
     Crop: Boolean=False;
     Elso: Boolean=True;
     CropScrollHorz, CropScrollVert: Integer;
@@ -156,6 +151,8 @@ interface
     Egyenes : Boolean = False;
     AHeight, AWidth : Integer;
     Egyseg : Byte = 0; // Kiválasztott mértékegység
+    ManZoom : Boolean; // Nagyítás mértéke manuálisan meghatározva
+    ManScale: Boolean=False; // Mératarány manuálisan meghatározva
 
     function NagyitasVizsgalo(szam : String) : Boolean;
 
@@ -164,11 +161,12 @@ implementation
   uses About, Parameters1, Page, Unit6, Options, Layers, Splash, Parameters2;
 
   var
-    PPI : Double; {A képernyõ felbontása}
-    FormPos1, FormPos2 : TPoint;
+    PPI : Double; // A képernyõ felbontása}
+    FormPos : TPoint; // A képernyõ pozíciója (bal felsõ sarok)
     SBMeret : TPoint;
     SBHelyX, SBHelyY : SmallInt;
     OMoveX, OMoveY, KoMoveX, KoMoveY : Integer;
+    BalTop, JobbTop, FennTop, LennTop: Integer;
     lapmovex, lapmovey : Integer;
 
     Zoom : Integer; // Nagyítás mértéke (%)
@@ -178,12 +176,17 @@ implementation
 
     VanMeres : Boolean = False;
     AfterClose : Boolean = False;
+    NeedManZoom : Boolean = False; // Nagyítás manuális megadása után frissítés végéig True
+    NeedManScale : Boolean = False; // Méretarány manuális megadása után frissítés végéig True
+    ZoomInProgress : Boolean = False; // Zoom gombok használata utáni frissítés alatt True
 
     // Görgetõsáv mozgatását vezérlõ attribútumok
     SBFel    : Boolean = False;
     SBLe     : Boolean = False;
     SBBalra  : Boolean = False;
     SBJobbra : Boolean = False;
+
+    OutFile : TextFile;
 
   const
     DRAWMODE = 1;
@@ -243,8 +246,8 @@ implementation
       Canvas.Moveto(StartPoint.X + 7, StartPoint.Y - 7);
       Canvas.Lineto(StartPoint.X - 7, StartPoint.Y + 7);
 
-      Canvas.Moveto(StartPoint.X,StartPoint.y);
-      Canvas.Lineto(EndPoint.X,EndPoint.Y);
+      Canvas.Moveto(StartPoint.X, StartPoint.y);
+      Canvas.Lineto(EndPoint.X, EndPoint.Y);
     end;
     VanMeres := False;
   end;
@@ -336,23 +339,26 @@ implementation
     VRes := GetDeviceCaps(self.Canvas.Handle, VERTRES);
     VSize := GetDeviceCaps(self.Canvas.Handle, VERTSIZE);
 
+    AssignFile(DebugFile, 'debug3.log');
+    Rewrite(DebugFile);
+    WriteLn(DebugFile, 'VRes: ', VRes);
+    WriteLn(DebugFile, 'VSize: ', VSize);
+
     TRY
       PPI := Convert('mm', 'in', VSize);
       PPI := VRes / PPI;
     EXCEPT
       PPI := 96;
     END;
+    WriteLn(DebugFile, 'PPI: ', Format('%g', [PPI]));
 
     EgysegCB.ItemIndex := IniFile.ReadInteger('Egyseg', 'Egyseg', 0);
     Egyseg := EgysegCB.ItemIndex;
 
-    PPI := Trunc(96 * Screen.Height / 768);
     if PPI < 90 then
       WindowState := wsMaximized;
 
-    AssignFile(DebugFile, 'debug1.log');
-    Rewrite(DebugFile);
-    Writeln(DebugFile, 'PPI: ', Format('%g', [PPI]));
+    WriteLn(DebugFile, 'PPI2: ', Format('%g', [PPI]));
     CloseFile(DebugFile);
 
     Screen.Cursors[CR_ZOOMIN]   := LoadCursor(HInstance, 'ZOOMIN');
@@ -377,20 +383,21 @@ implementation
     Abra.Picture.Graphic := Bitmap;
     OrigoX := Trunc(Abra.Width / 2);
     OrigoY := Trunc(Abra.Height / 2);
-    Fenntop := 0;
-    Lenntop := 0;
-    Baltop := 0;
-    Jobbtop := 0;
-    Lupe := False;
+    FennTop := 0;
+    LennTop := 0;
+    BalTop := 0;
+    JobbTop := 0;
+    ManZoom := False;
     SzelesEd.Text := '';
     MagasEd.Text := '';
     Lapszeles.Text := '';
     Lapmagas.Text := '';
-    FormPos1.x := Left;
-    FormPos1.y := Top;
-    UjForm := TSettingsForm.Create(Application);
-    UjForm.Top := Top + 35 + (ClientHeight - ScrollBox1.Height);
-    UjForm.Left := Left + 13;
+    FormPos.x := Left;
+    FormPos.y := Top;
+
+    SettingsForm := TSettingsForm.Create(Application);
+    SettingsForm.Top := Top + 35 + (ClientHeight - ScrollBox1.Height);
+    SettingsForm.Left := Left + 13;
 
     Lapx[0,0] := 1189;Lapy[0,0] := 841;
     Lapx[1,0] := 841;Lapy[1,0] := 594;
@@ -474,13 +481,13 @@ implementation
         end;
       CR_ZOOMOUT:
         begin
-          Lupe := True;
+          ManZoom := True;
           PrevZoom := Zoom;
           StartPoint.X := X;
           StartPoint.y := Y;
           Zoom := Trunc(Zoom/2);
           Abra.Cursor := crDefault;
-          Zoomol := True;
+          ZoomInProgress := True;
           FrissitClick(KicsinyitBtn);
           Exit;
         end;
@@ -650,15 +657,15 @@ implementation
 
             Meminfo.dwLength := Sizeof(Meminfo);
             GlobalMemoryStatus(Meminfo);
-            Maxbmp := Trunc(0.3 * (Bitmap.Width * Bitmap.Height + 2 * (MemInfo.dwAvailPhys + MemInfo.dwAvailPageFile)));
+            MaxBmp := Trunc(0.3 * (Bitmap.Width * Bitmap.Height + 2 * (MemInfo.dwAvailPhys + MemInfo.dwAvailPageFile)));
 
-            if sqr(Zoom / PrevZoom) * Bitmap.Width * Bitmap.Height > Maxbmp then
-              Zoom := Trunc(PrevZoom * sqrt(Maxbmp / Bitmap.Width / Bitmap.Height));
+            if Sqr(Zoom / PrevZoom) * Bitmap.Width * Bitmap.Height > MaxBmp then
+              Zoom := Trunc(PrevZoom * Sqrt(MaxBmp / Bitmap.Width / Bitmap.Height));
             if Zoom / PrevZoom * Bitmap.Width > 5000 then
               Zoom := Trunc(PrevZoom * 5000 / Bitmap.Width);
 
-            Zoomol := True;
-            Lupe := True;
+            ZoomInProgress := True;
+            ManZoom := True;
           end;
 
           if Bitmap.Width > ScrollBox1.Width - 5 then
@@ -678,10 +685,10 @@ implementation
             TeljesBtn.Enabled := True;
             CropScrollHorz := ScrollBox1.HorzScrollBar.Position;
             CropScrollVert := ScrollBox1.VertScrollBar.Position;
-            Baltop  := ValosX(StartPoint.X - ZoomShape.Width div 2) + OMoveX;
-            Jobbtop := ValosX(StartPoint.X + ZoomShape.Width div 2) + OMoveX;
-            Lenntop := ValosY(StartPoint.y + ZoomShape.Height div 2) + OMoveY;
-            Fenntop := ValosY(StartPoint.y - ZoomShape.Height div 2) + OMoveY;
+            BalTop  := ValosX(StartPoint.X - ZoomShape.Width div 2) + OMoveX;
+            JobbTop := ValosX(StartPoint.X + ZoomShape.Width div 2) + OMoveX;
+            LennTop := ValosY(StartPoint.y + ZoomShape.Height div 2) + OMoveY;
+            FennTop := ValosY(StartPoint.y - ZoomShape.Height div 2) + OMoveY;
           end;
 
           FrissitClick(Segedshape);
@@ -690,7 +697,7 @@ implementation
         Abra.Cursor := crDefault;
         ZoomShape.Width := 1;
         ZoomShape.Height := 1;
-        Zoomol := False;
+        ZoomInProgress := False;
         Exit;
       end else if Abra.Cursor = CR_MOVEFROM then begin
         Abra.Canvas.Moveto(StartPoint.X, StartPoint.y);
@@ -708,7 +715,7 @@ implementation
         StatusBar3.Visible := True;
         StatusBar3.BringToFront;
         StatusBar3.Panels[0].Text := 'A kijelölt távolság: ' +
-          Format('%-8.6g', [Convert(INCHUNIT, Egyseg, sqrt(sqr(ValosX(StartPoint.X) - ValosX(X)) + sqr(ValosY(StartPoint.Y) - ValosY(Y))))]) + ' ' + UNITS[Egyseg].Code;
+          Format('%-8.6g', [Convert(INCHUNIT, Egyseg, Sqrt(Sqr(ValosX(StartPoint.X) - ValosX(X)) + Sqr(ValosY(StartPoint.Y) - ValosY(Y))))]) + ' ' + UNITS[Egyseg].Code;
 
         EndPoint.x := KisXKorr(X);
         EndPoint.y := KisYKorr(Y);
@@ -756,23 +763,23 @@ implementation
       n, ce, betan, beta1, beta2, beta0: Double;
       fil1, fil2, fil3: file of Byte;
 
-    procedure Elsotop;
+    procedure ElsoTop;
     begin
       if q = 0 then begin
-        Jobbtop := x2;
-        Baltop := x2;
-        Fenntop := y2;
-        Lenntop := y2;
+        JobbTop := x2;
+        BalTop := x2;
+        FennTop := y2;
+        LennTop := y2;
       end;
       q := q + 1;
     end;
 
     procedure Topvizsgalo;
     begin
-      if x2 < Baltop  then Baltop  := x2;
-      if x2 > Jobbtop then Jobbtop := x2;
-      if y2 < Lenntop then Lenntop := y2;
-      if y2 > Fenntop then Fenntop := y2;
+      if x2 < BalTop  then BalTop  := x2;
+      if x2 > JobbTop then JobbTop := x2;
+      if y2 < LennTop then LennTop := y2;
+      if y2 > FennTop then FennTop := y2;
     end;
 
     procedure Szinado(SzinCB: TCombobox);
@@ -795,7 +802,7 @@ implementation
       PRINTMODE:
         Printer.Canvas.Pen.Color := Szin;
       PLTMODE:
-        writeln(Filesv, 'sp', SzinCB.ItemIndex + 1, ';');
+        WriteLn(OutFile, 'sp', SzinCB.ItemIndex + 1, ';');
       else
         Bitmap.Canvas.Pen.Color := Szin
       end;
@@ -847,8 +854,8 @@ implementation
     var w : Double;
     begin
       TRY
-        fc2 := arcsin(sin(F0) * sin(ff) + cos(F0) * cos(ff) * cos(ll - L0));
-        if abs(cos(F0)) < 1.0e-8 then begin
+        fc2 := Arcsin(Sin(F0) * Sin(ff) + Cos(F0) * Cos(ff) * Cos(ll - L0));
+        if Abs(Cos(F0)) < 1.0e-8 then begin
           if Almost(F0, Pi / 2) then begin
             lc2 := ll - L0;
             fc2 := ff;
@@ -863,27 +870,27 @@ implementation
             if lc2 > Pi then lc2 := lc2 - 2 * Pi * (Trunc(180 / Pi * lc2 + 180) div 360);
           end
         end else begin
-          if abs(cos(fc2)) < 1.0e-8 then
+          if Abs(Cos(fc2)) < 1.0e-8 then
             lc2 := L0
-          else if abs(sin(ll - L0)) < 1.0e-8 then begin
-            if ((ff < F0) and (ll = L0)) or ((ff <= -F0) and (abs(ll - L0) = Pi)) then begin
+          else if Abs(Sin(ll - L0)) < 1.0e-8 then begin
+            if ((ff < F0) and (ll = L0)) or ((ff <= -F0) and (Abs(ll - L0) = Pi)) then begin
               if KMEszaki then
-                lc2 := (ll + 0.00001) / abs(ll + 0.00001) * Pi
+                lc2 := (ll + 0.00001) / Abs(ll + 0.00001) * Pi
               else
                 lc2 := 0
             end else if KMEszaki then
               lc2 := 0
-            else lc2 := (ll + 0.00001) / abs(ll + 0.00001) * Pi;
+            else lc2 := (ll + 0.00001) / Abs(ll + 0.00001) * Pi;
           end else begin
-            w := cos(F0) * cos(fc2);
-            if abs((sin(ff) - sin(F0) * sin(fc2)) / w) > 1 then begin
+            w := Cos(F0) * Cos(fc2);
+            if Abs((Sin(ff) - Sin(F0) * Sin(fc2)) / w) > 1 then begin
               lc2 := Pi / 4;
             end else begin
-              lc2 := arccos((sin(ff) - sin(F0) * sin(fc2)) / w);
-              lc2 := -(sin(ll - L0) / abs(sin(ll - L0))) * abs(lc2);
+              lc2 := Arccos((Sin(ff) - Sin(F0) * Sin(fc2)) / w);
+              lc2 := -(Sin(ll - L0) / Abs(Sin(ll - L0))) * Abs(lc2);
             end;
             if not KMEszaki then
-              lc2 := -lc2 / abs(lc2) * (Pi - abs(lc2));
+              lc2 := -lc2 / Abs(lc2) * (Pi - Abs(lc2));
           end;
         end;
       EXCEPT
@@ -900,7 +907,7 @@ implementation
       PRINTMODE :
         Printer.Canvas.Moveto(printerrex(x - OMoveX), printerrey(y - OMoveY));
       PLTMODE :
-        writeln(Filesv, 'pu ', x - OMoveX, ' ', y - OMoveY, ';');
+        WriteLn(OutFile, 'pu ', x - OMoveX, ' ', y - OMoveY, ';');
       else
         Bitmap.Canvas.Moveto(keprex(x - KoMoveX),keprey(y - KoMoveY))
       end;
@@ -912,14 +919,15 @@ implementation
       PRINTMODE :
         Printer.Canvas.Lineto(printerrex(x - OMoveX), printerrey(y - OMoveY));
       PLTMODE :
-        writeln(Filesv, 'pd ', x - OMoveX, ' ', y - OMoveY, ';');
+        WriteLn(OutFile, 'pd ', x - OMoveX, ' ', y - OMoveY, ';');
       else
         Bitmap.Canvas.Lineto(keprex(x - KoMoveX), keprey(y - KoMoveY));
       end;
     end;
 
-    procedure psziszamito(var Pszi : Double);
-    var Xa, Xb, B, D: Double;
+    procedure PsziSzamito(var Pszi : Double);
+    var
+      Xa, Xb, B, D: Double;
 
       function Fv(J : Double) : Double;
       begin
@@ -935,7 +943,7 @@ implementation
         end;
       end;
 
-    begin // psziszamito
+    begin // PsziSzamito
       Xa := 1;
       Xb := 0;
 
@@ -958,7 +966,7 @@ implementation
         Xa := Xb;
         Xb := Pszi;
       until (Abs(Xb - Xa) < 1.0e-9) or (Fv(Pszi) = 0);
-    end; // procedure psziszamito
+    end; // procedure PsziSzamito
 
     procedure inicializalo;
     begin
@@ -966,45 +974,45 @@ implementation
       20 : // Ptolemaiosz-féle
         begin
           betan := Arcus(fin);
-          n := cos(betan);
+          n := Cos(betan);
         end;
       21 : // De l'Isle-féle
         begin
           beta1 := Arcus(fi1);
           beta2 := Arcus(fi2);
           beta0 := (beta1 + beta2) / 2;
-          n := cos(beta0) * sin(beta1 - beta0) / (beta1 - beta0);
+          n := Cos(beta0) * Sin(beta1 - beta0) / (beta1 - beta0);
         end;
       22 : // Szögtartó és egy paralelkörben hossztartó
         begin
           betan := Arcus(fin);
-          n := cos(betan);
-          ce := tan(betan) / exp(n * ln(tan(betan / 2)));
+          n := Cos(betan);
+          ce := Tan(betan) / Exp(n * Ln(Tan(betan / 2)));
         end;
       23 : // Lambert-Gauss-féle
         begin
           beta1 := Arcus(fi1);
           beta2 := Arcus(fi2);
-          n := (ln(sin(beta1)) - ln(sin(beta2))) / (ln(tan(beta1 / 2)) - ln(tan(beta2 / 2)));
-          ce := sin(beta1) / n / exp(n * ln(tan(beta1 / 2)));
+          n := (Ln(Sin(beta1)) - Ln(Sin(beta2))) / (Ln(Tan(beta1 / 2)) - Ln(Tan(beta2 / 2)));
+          ce := Sin(beta1) / n / Exp(n * Ln(Tan(beta1 / 2)));
         end;
       24 : // Albers-féle
         begin
           beta1 := Arcus(fi1);
           beta2 := Arcus(fi2);
-          n := (cos(beta1) + cos(beta2)) / 2;
-          ce := sqr(2 / n * sin(beta1 / 2) * sin(beta2 / 2));
+          n := (Cos(beta1) + Cos(beta2)) / 2;
+          ce := Sqr(2 / n * Sin(beta1 / 2) * Sin(beta2 / 2));
         end;
       25 : // Területtartó és egy paralelkörben hossztartó
         begin
           betan := Arcus(fin);
-          n := cos(betan);
-          ce := sqr(2 / n * sqr(sin(betan / 2)));
+          n := Cos(betan);
+          ce := Sqr(2 / n * Sqr(Sin(betan / 2)));
         end;
       26 : // Lambert-féle
         begin
           betan := Arcus(fin);
-          n := sqr(cos(betan / 2));
+          n := Sqr(Cos(betan / 2));
           ce := 0;
         end;
       27 : // Perspektív
@@ -1018,603 +1026,646 @@ implementation
             ce := 1;
             betan := Pi / 2 - beta1 / 2;
           end else if fi1 = fi2 then begin
-            ce := 1 / cos(beta1);
+            ce := 1 / Cos(beta1);
             betan := Pi / 2 - beta1;
           end else begin
-            ce := (sin(beta2) * cos(beta1) - sin(beta1) * cos(beta2)) / (sin(beta2) - sin(beta1));
-            betan := arctan(sin(beta1) / (ce - cos(beta1)));
+            ce := (Sin(beta2) * Cos(beta1) - Sin(beta1) * Cos(beta2)) / (Sin(beta2) - Sin(beta1));
+            betan := Arctan(Sin(beta1) / (ce - Cos(beta1)));
           end;
-          n := sin(betan);
+          n := Sin(betan);
         end;
-
-    41,43,45,46: betan := arcus(fin);
-    60:ce := arcus(fin)+cotan(arcus(fin));
-    61:ce := Pi/2;
-    69:begin
-        ce := fia;
-        betan := -arcus(fik);
-       end;
-    107: betan := arcus(fin);
-    end;
-    if AktivVetulet in [27,46] then
-      if ParametersForm1.IranyCB.ItemIndex=0 then beta0 := fia else beta0 := -fia;
-   end;
-
-   procedure vetites(var aX,aY:integer);
-   var p, beta, bX, bY, pszi, aa, bb, cc, gg, pp, qq, ss, tt: Double;
-   begin
-    if not Ferde then begin
-      Lc := Lc - L0N;
-      if Lc < -Pi then
-        Lc := Lc + 2 * Pi * (Trunc(-180 / Pi * Lc + 180) div 360);
-      if Lc > Pi then
-        Lc := Lc - 2 * Pi * (Trunc(180 / Pi * Lc + 180) div 360);
+      41,43,45,46:
+        betan := Arcus(fin);
+      60:
+        ce := Arcus(fin)+cotan(Arcus(fin));
+      61:
+        ce := Pi/2;
+      69:
+        begin
+          ce := fia;
+          betan := -Arcus(fik);
+        end;
+      107: betan := Arcus(fin);
+      end;
+      if AktivVetulet in [27,46] then begin
+        if ParametersForm1.IranyCB.ItemIndex = 0 then
+          beta0 := fia
+        else
+          beta0 := -fia;
+      end;
     end;
 
-    beta := Pi / 2 - Fc;
-    p := beta;
-    case Csalad of
-    0 : begin
-       case AktivVetulet of
-       0: p := beta;
-       1: p := 2*sin(beta/2);
-       2: p := 2*tan(beta/2);
-       3: p := tan(beta);
-       4: p := sin(beta);
-       end;
-        aX := Trunc(p*sin(Lc)*EARTHRADIUS/1000/Scale);
-        aY := -Trunc(p*cos(Lc)*EARTHRADIUS/1000/Scale);
+    procedure Vetites(var aX, aY : Integer); // Eredménykoordináták mértékegysége ezredinch
+    var
+      Beta : Double; // pólustávolság
+      p, bX, bY, pszi : Double;
+      aa, bb, cc, gg, pp, qq, ss, tt: Double;
+    begin
+      if not Ferde then begin
+        Lc := Lc - L0N;
+        if Lc < -Pi then
+          Lc := Lc + 2 * Pi * (Trunc(-180 / Pi * Lc + 180) div 360);
+        if Lc > Pi then
+          Lc := Lc - 2 * Pi * (Trunc(180 / Pi * Lc + 180) div 360);
       end;
-    1:begin
-       case AktivVetulet of
-       20: p := tan(betan)+beta-betan;
-       21: p := tan(beta0)/tan(beta1-beta0)*(beta1-beta0)+beta-beta0;
-       22,23: p := ce*exp(n*ln(tan(beta/2)));
-       24,25: p := sqrt(4/n*sqr(sin(beta/2))+ce);
-       26: p := sin(beta/2)/sqrt(n);
-       27:begin
-           if ParametersForm1.VegtelenChk.Checked then p := sin(beta)/sin(betan)
-           else p := (ce+beta0)*sin(beta)/(beta0*sin(betan)+sin(betan+beta));
+
+      Beta := Pi / 2 - Fc;
+      p := Beta;
+
+      case Csalad of
+      0: // Valós síkvetületek
+        begin
+          case AktivVetulet of
+          0: // Postel-féle
+            p := Beta;
+          1: // Lambert-féle
+            p := 2 * Sin(Beta/2);
+          2: // Sztereografikus
+            p := 2 * Tan(Beta/2);
+          3: // Gnomonikus
+            p := Tan(Beta);
+          4: // Ortografikus
+            p := Sin(Beta);
           end;
-       end;
-       aX := Trunc(p*sin(n*Lc)*EARTHRADIUS/1000/Scale);
-       aY := -Trunc(p*cos(n*Lc)*EARTHRADIUS/1000/Scale);
-      end;
-    2:begin
-       case AktivVetulet of
-       40: begin
-            bX := Lc;
-            bY := Fc;
-           end;
-       41: begin
-            bX := Lc*cos(betan);
-            bY := Fc;
-           end;
-       42: begin
-            bX := Lc;
-            bY := sin(Fc);
-           end;
-       43: begin
-            bX := Lc*cos(betan);
-            bY := sin(Fc)/cos(betan);
-           end;
-       44: begin
-            bX := Lc;
-            bY := ln(tan(Fc/2+Pi/4));
-           end;
-       45: begin
-            bX := Lc*cos(betan);
-            bY := cos(betan)*ln(tan(Fc/2+Pi/4));
-           end;
-       46: begin
-            bX := Lc*cos(betan);
-            bY := (beta0*cos(betan)*(1-cos(Fc))+sin(Fc)*cos(betan))/cos(Fc);
-           end;
-       end;
-       aX := Trunc(bX*EARTHRADIUS/1000/Scale);
-       aY := Trunc(bY*EARTHRADIUS/1000/Scale);
-      end;
-    3:begin
-       case AktivVetulet of
-       60:begin
-           p := ce-Fc;
-           n := cos(Fc)/p*Lc;
-           bX := p*sin(n);
-           bY := ce-p*cos(n);
-          end;
-       61:begin
-           p := ce-Fc;
-           if p<0.001 then n := 0 else n := cos(Fc)/p*Lc;
-           bX := p*sin(n);
-           bY := ce-p*cos(n);
-          end;
-       62:begin
-           if Fc=0 then
+          aX := Trunc(p * Sin(Lc) * EARTHRADIUS / 1000 / Scale);
+          aY := -Trunc(p * Cos(Lc) * EARTHRADIUS / 1000 / Scale);
+        end;
+      1: // Valós kúpvetületek
+        begin
+          case AktivVetulet of
+          20: // Ptolemaiosz-féle
+            p := Tan(betan) + Beta - betan;
+          21: // De l'Isle-féle
+            p := Tan(beta0) / Tan(beta1 - beta0) * (beta1 - beta0) + Beta - beta0;
+          22,23: // Szögtartó és egy paralelkörben hossztartó / Lambert-Gauss-féle
+            p := ce * Exp(n * Ln(Tan(Beta/2)));
+          24,25: // Albers-féle / Területtartó és egy paralelkörben hossztartó
+            p := Sqrt(4 / n * Sqr(Sin(Beta/2)) + ce);
+          26: // Lambert-féle
+            p := Sin(Beta/2) / Sqrt(n);
+          27: // Perspektív
             begin
-             bX := Lc;
-             bY := 0
-            end
-           else
-            begin
-             p := cotan(Fc);
-             n := Lc*sin(Fc);
-             bX := sin(n)*cotan(Fc);
-             bY := fia*Fc+(1-cos(n))*cotan(Fc);
-            end;
-          end;
-       63:begin
-           if Fc=0 then
-            begin
-             bX := Lc;
-             bY := 0;
-            end
-           else
-            begin
-             n := 2*arctan(Lc/2*sin(Fc));
-             p := cotan(Fc);
-             bX := sin(n)*p;
-             bY := fia*Fc+(1-cos(n))*p;
-            end;
-          end;
-       64:begin
-           qq := Fc;
-           if abs(Fc)<0.02 then Fc := 0.001;
-           psziszamito(n);
-           p := cotan(Fc);
-           bX := sin(n)*p;
-           bY := fia*Fc+(1-cos(n))*p;
-           Fc := qq;
-          end;
-       65:begin
-           if Fc=0 then
-            begin
-             bX := 2*tan(Lc/2);
-             bY := 0;
-            end
-           else
-            begin
-             n := 2*arctan(tan(Fc/2)*tan(Lc/2));
-             p := cotan(Fc);
-             bX := sin(n)*p;
-             bY := 1/sin(Fc)-p*cos(n);
-            end;
-          end;
-       66:begin
-           bb := abs(2*Fc/Pi);
-           cc := sqrt(1-sqr(bb));
-           if abs(Fc)<0.001 then
-            begin
-             bX := Lc;
-             bY := 0;
-            end
-           else
-           if abs(Lc)<0.001 then
-            begin
-             bX := 0;
-             bY := sgn(Fc)*Pi*bb/(1+cc);
-            end
-           else
-           if Pi/2-abs(Fc)<0.001 then
-            begin
-             bX := 0;
-             bY := sgn(Fc)*Pi;
-            end
-           else
-            begin
-             aa := abs(Pi/Lc-Lc/Pi)/2;
-             gg := cc/(bb+cc-1);
-             pp := gg*(2/bb-1);
-             qq := sqr(aa)+gg;
-             ss := sqr(pp)+sqr(aa);
-             tt := gg-sqr(pp);
-             bX := sgn(Lc)*Pi*(aa*tt+sqrt(sqr(aa*tt)-ss*(sqr(gg)-sqr(pp))))/ss;
-             bY := sgn(Fc)*Pi*(pp*qq-aa*sqrt(ss*(sqr(aa)+1)-sqr(qq)))/ss;
-            end;
-          end;
-       67:begin
-           bb := abs(2*Fc/Pi);
-           cc := sqrt(1-sqr(bb));
-           if abs(Lc)<0.001 then
-            begin
-             bX := 0;
-             bY := sgn(Fc)*Pi*bb/(1+cc);
-            end
-           else
-            begin
-             aa := abs(Pi/Lc-Lc/Pi)/2;
-             gg := (cc*sqrt(1+sqr(aa))-aa*sqr(cc))/(1+sqr(aa*bb));
-             bX := sgn(Lc)*Pi*gg;
-             bY := sgn(Fc)*Pi*sqrt(1-sqr(gg)-2*aa*gg);
-            end;
-          end;
-       68:begin
-             if abs(Fc)<0.001 then
-              begin
-               bX := Lc;
-               bY := 0;
-              end
-             else
-             if (abs(Lc)<0.001) or (Pi/2-abs(Fc)<0.001) then
-              begin
-               bX := 0;
-               bY := Fc;
-              end
-             else
-              begin
-               bb := abs(2*Fc/Pi);
-               cc := (8*bb-sqr(sqr(bb))-2*sqr(bb)-5)/(2*sqr(bb)*bb-2*sqr(bb));
-               gg := sgn(abs(Lc)-Pi/2)*sqrt(sqr(2*Lc/Pi+Pi/2/Lc)-4);
-               pp := sqr(bb+cc)*(sqr(bb)+sqr(cc*gg)-1)+(1-sqr(bb))*(sqr(bb)*
-                 (sqr(bb+3*cc)+4*sqr(cc))+12*bb*sqr(cc)*cc+4*sqr(sqr(cc)));
-               qq := (gg*(sqr(bb+cc)+sqr(cc)-1)+2*sqrt(pp))/(4*(sqr(bb+cc))+sqr(gg));
-               bX := sgn(Lc)*Pi*qq/2;
-               bY := sgn(Fc)*Pi/2*sqrt(1+gg*abs(qq)-sqr(qq));
-              end;
-          end;
-       69:begin
-           if Pi/2-abs(Fc)<0.001 then
-            begin
-             bX := 0;
-             bY := 2*sgn(Fc);
-            end
-           else
-            begin
-             aa := exp((1/2/ce)*ln((1+sin(betan))/(1-sin(betan))));
-             bb := exp((1/2/ce)*ln((1+sin(Fc))/(1-sin(Fc))));
-             gg := aa*bb;
-             cc := (gg+1/gg)/2+cos(Lc/ce);
-             bX := 2*sin(Lc/ce)/cc;
-             bY := (gg-1/gg)/cc;
-            end;
-          end;
-       70:begin
-             if abs(Lc)<0.001 then
-              begin
-               bX := 0;
-               bY := Fc;
-              end
-             else
-             if abs(Fc)<0.001 then
-              begin
-               bX := Lc;
-               bY := 0;
-              end
-             else
-             if abs(Pi/2-abs(Lc))<0.001 then
-              begin
-               bX := Lc*cos(Fc);
-               bY := Pi/2*sin(Fc);
-              end
-             else
-              begin
-               cc := 2.4674011;
-               pp := abs(Pi*sin(Fc));
-               ss := (cc-sqr(Fc))/(pp-2*abs(Fc));
-               aa := sqr(Lc)/cc-1;
-               bY := sgn(Fc)*(sqrt(sqr(ss)-aa*(cc-pp*ss-sqr(Lc)))-ss)/aa;
-               bX := sgn(Lc)*abs(Lc)*sqrt(1-sqr(bY)/cc);
-              end;
-          end;
-       end;
-       aX := Trunc(bX*EARTHRADIUS/1000/Scale);
-       aY := Trunc(bY*EARTHRADIUS/1000/Scale);
-      end;
-    4:begin
-       case AktivVetulet of
-       80: begin
-            bX := cos(Fc)*Lc;
-            bY := Fc;
-           end;
-       81: begin
-            bX := 0.877382675*Lc*sqrt(1-0.75*sqr(sin(Fc)));
-            bY := 1.316074013*arcsin(0.866025404*sin(Fc));
-           end;
-       82: begin
-            bX := 0.882025543*Lc*(cos(Fc)+1)/2;
-            bY := 0.882025543*Fc;
-           end;
-       83: begin
-            psziszamito(pszi);
-            bX := 0.882025543*Lc*(cos(pszi)+1)/2;
-            bY := 0.882025543*pszi;
-           end;
-       84: begin
-            bY := Fc;
-            bX := 1-4*sqr(Fc/Pi);
-            if bX<=0 then bX := 0 else bX := Lc*sqrt(bX);
-           end;
-       85: begin
-            psziszamito(pszi);
-            bX := 0.900316316*Lc*cos(pszi);
-            bY := 1.414213562*sin(pszi);
-           end;
-       86: begin
-            bX := 1-4*sqr(Fc/Pi);
-            if bX<=0 then bX := Lc/2 else bX := 0.4222382*Lc*(1+sqrt(bX));
-            bY := 0.844476401*Fc;
-           end;
-       87: begin
-            psziszamito(pszi);
-            bY := 0.844476401*Pi/2*sin(pszi);
-            bX := 0.4222382*Lc*(1+cos(pszi));
-           end;
-       88: begin
-            bY := Fc;
-            bX := 0.866025404*Lc*sqrt(1-0.303963551*sqr(Fc));
-           end;
-       89: begin
-            if abs(Fc)<arcus(fis) then
-             begin
-              bX := 0.960415*sqrt(1-0.64*sqr(sin(Fc)))*Lc;
-              bY := 1.30152*arcsin(0.8*sin(Fc));
-             end
-            else
-             begin
-              psziszamito(pszi);
-              if fis<65 then
-               begin
-                bX := 1.070223*cos(pszi)*Lc;
-                bY := 1.681102*sin(pszi)-sgn(Fc)*0.285475;
-               end
+              if ParametersForm1.VegtelenChk.Checked then
+                p := Sin(Beta) / Sin(betan)
               else
-               begin
-                bX := 1.249039*cos(pszi)*Lc;
-                bY := 1.961985*sin(pszi)-sgn(Fc)*0.583828;
-               end;
-             end;
-           end;
-       90: begin
-            if Fc<=0 then
-             begin
-              if Lc<=arcus(-100) then aa := arcus(-160);
-              if (Lc>arcus(-100)) and (Lc<=arcus(-20)) then aa := arcus(-60);
-              if (Lc>arcus(-20)) and (Lc<=arcus(80)) then aa := arcus(30);
-              if Lc>arcus(80) then aa := arcus(140);
-             end
-            else
-             begin
-              if Lc<=arcus(-40) then aa := arcus(-100)
-              else aa := arcus(30);
-             end;
-            if abs(Fc)<=arcus(40.7333) then
-             begin
-              bX := cos(Fc)*(Lc-aa)+aa;
+                p := (ce+beta0) * Sin(Beta) / (beta0 * Sin(betan) + Sin(betan + Beta));
+            end;
+          end;
+          aX := Trunc(p * Sin(n * Lc) * EARTHRADIUS / 1000 / Scale);
+          aY := -Trunc(p * Cos(n * Lc) * EARTHRADIUS / 1000 / Scale);
+        end;
+      2: //Valós hengervetületek
+        begin
+          case AktivVetulet of
+          40: // Négyzetes
+            begin
+              bX := Lc;
               bY := Fc;
-             end
-            else
-             begin
-              psziszamito(pszi);
-              bX := 0.900316316*(Lc-aa)*cos(pszi)+aa;
-              bY := 1.414213562*sin(pszi)-sgn(Fc)*0.05280;
-             end;
-           end;
-       91: begin
-            bY := sgn(Fc)*(0.95*abs(Fc)+0.9/Pi*sqr(Fc));
-            if abs(Fc)<1.221730476 then
-             begin
-               pszi := arcsin(bY/1.84466);
-               bX := Lc/Pi*(Pi-1.84466+1.84466*cos(pszi));
-             end
-            else
-             begin
-               pszi := arccos((4.39461-(0.7*Pi-abs(bY)))/4.39461);
-               bX := 4.39461*sin(pszi)*Lc/Pi;
-             end;
-           end;
-       92: begin
-            bY := 0.0273759*sqr(sqr(Fc))*Fc-0.107505*sqr(Fc)*abs(Fc)*Fc+
-              0.112579*sqr(Fc)*Fc+Fc;
-            if abs(Fc)<=1.362578547
-            then bX := (1.22172+sqrt(2.115393-sqr(bY)))*
-              ln(0.11679*abs(Lc)+1)/0.31255*sgn(Lc)
-            else bX := sqrt(38.4308-sqr(4.58448+abs(bY)))*
-              ln(0.11679*abs(Lc)+1)/0.31255*sgn(Lc);
-           end;
-       93: begin
-            bX := (2.6666-0.3670*sqr(Fc)-0.15*sqr(sqr(Fc))+
-              0.0379*sqr(sqr(Fc))*sqr(Fc))*Lc/Pi;
-            bY := 0.96047*Fc-0.00857*exp(6.41*ln(abs(Fc)))*sgn(Fc);
-           end;
-       94: begin
-            bY := Fc;
-            if (Lc=0) or ((abs(Fc)>arcus(89.9)) and ((Felgomb) or (abs(Lc)<arcus(91)))) then bX := 0
-            else
-             begin
-              p := (sqr(Pi/2)+sqr(Lc))/2/abs(Lc);
-              bX := (abs(Lc)-p+sqrt(sqr(p)-sqr(Fc)))*sgn(Lc);
-             end;
-           end;
-       95: begin
-            bY := Pi/2*sin(Fc);
-            if (abs(Lc)<0.001) or ((abs(Fc)>arcus(89.9)) and ((Felgomb) or (abs(Lc)<arcus(91)))) then bX := 0
-            else
-             begin
-              bb := (sqr(Pi/2)/abs(Lc)+abs(Lc))/2;
-              if sqr(bb)>sqr(bY) then gg := sqrt(sqr(bb)-sqr(bY)) else gg := 0;
-              bX := sgn(Lc)*(abs(Lc)-bb+gg);
-             end;
-           end;
-       96: begin
-            bY := Fc;
-            if Lc=0 then bX := 0
-            else
-             begin
-              p := (sqr(Pi/2)+sqr(Lc))/2/abs(Lc);
-              if abs(Lc)<=Pi/2 then bX := (abs(Lc)-p+sqrt(sqr(p)-sqr(Fc)))*sgn(Lc)
-              else
-               begin
-                if abs(Fc)>=Pi/2-0.001 then bX := (abs(Lc)-Pi/2)*sgn(Lc)
-                else bX := (abs(Lc)-Pi/2+sqrt(sqr(Pi/2)-sqr(Fc)))*sgn(Lc);
-               end;
-             end;
-           end;
-       97: begin
-            bY := Fc;
-            bX := Lc*(Pi/2-abs(Fc))/(Pi/2);
-           end;
-       98: begin
-            if (abs(Lc)<0.001) or (abs(Fc)>arcus(89.9)) then bX := 0
-            else bX := 2*sqrt(2)*Lc*sin((Pi/2-abs(Fc))/2)/sqrt(Pi);
-            bY := sqrt(Pi)*(1-1.41421356*sin((Pi/2-abs(Fc))/2))*sgn(Fc);
-           end;
-       99: begin
-            bX := Lc/Pi*(Pi-abs(Fc));
-            bY := Fc;
-           end;
-       180: begin
-            bX := 0.460658866*Lc*sqrt(4-3*sin(abs(Fc)));
-            bY := 1.447202509*sgn(Fc)*(2-sqrt(4-3*sin(abs(Fc))));
-           end;
-       181:begin
-           bb := abs(2*Fc/Pi);
-           cc := sqrt(1-sqr(bb));
-           if Pi/2-abs(Fc)<0.001 then
+            end;
+          41: // Meridiánban és két paralelkörben hossztartó
             begin
-             bX := 0;
-             bY := sgn(Fc)*Pi;
-            end
-           else
-           if abs(Fc)<0.0001 then
+              bX := Lc * Cos(betan);
+              bY := Fc;
+            end;
+          42: // Lambert-féle
             begin
-             bX := Lc;
-             bY := 0;
-            end
-           else
-           if abs(Lc)<0.0001 then
+              bX := Lc;
+              bY := Sin(Fc);
+            end;
+          43: // Területtartó és két paralelkörben hossztartó
             begin
-             bX := 0;
-             bY := sgn(Fc)*Pi*bb/(1+cc);
-            end
-           else
+              bX := Lc * Cos(betan);
+              bY := Sin(Fc) / Cos(betan);
+            end;
+          44: // Mercator-féle
             begin
-             aa := abs(Pi/Lc-Lc/Pi)/2;
-             gg := bb/(1+cc);
-             bX := sgn(Lc)*Pi*(sqrt(sqr(aa)+1-sqr(gg))-aa);
-             bY := sgn(Fc)*Pi*gg;
+              bX := Lc;
+              bY := Ln(Tan(Fc/2 + Pi/4));
             end;
-           end;
-       182:begin
-             bY := Fc;
-             gg := 4.478461;
-             if Fc<-Pi/4 then aa := 3*sin(2*Fc+Pi)
-             else
-             if Fc<0 then aa := gg*3/2*sin(2/3*Fc+2*Pi/3)-1.5*gg+3
-             else
-             if Fc<Pi/6 then aa := gg*sin(Fc+4*Pi/3)+gg+1.5
-             else
-             if Fc<Pi/3 then aa := sin(6*Fc+Pi/2)/4+1.75
-             else aa := 2*sin(3*Fc-Pi/2);
-             bX := aa*Lc/Pi;
-           end;
-       183:begin
-             bY := Fc;
-             gg := 4.478461;
-             if Fc<-Pi/4 then aa := sqrt((sqr(Pi)/16-sqr(-Fc-Pi/4))*9/sqr(Pi)*16)
-             else
-             if Fc<0 then aa := gg*3/2*sin(2/3*Fc+2*Pi/3)-1.5*gg+3
-             else
-             if Fc<Pi/6 then aa := gg*sin(Fc+4*Pi/3)+gg+1.5
-             else
-             if Fc<Pi/3 then aa := sin(6*Fc+Pi/2)/4+1.75
-             else aa := sqrt((sqr(Pi)/36-sqr(Fc-Pi/3))*4/sqr(Pi)*36);
-             bX := aa*Lc/Pi/2;
-           end;
-       end;
-       aX := Trunc(bX*EARTHRADIUS/1000/Scale);
-       aY := Trunc(bY*EARTHRADIUS/1000/Scale);
-      end;
-    5:begin
-       case AktivVetulet of
-       100: begin
-             bX := 2.828427125*cos(Fc)*sin(Lc/2)/sqrt(1+cos(Fc)*cos(Lc/2));
-             bY := 1.414213562*sin(Fc)/sqrt(1+cos(Fc)*cos(Lc/2));
+          45: // Szögtartó és két paralelkörben hossztartó
+            begin
+              bX := Lc * Cos(betan);
+              bY := Cos(betan) * Ln(Tan(Fc/2 + Pi/4));
             end;
-       101: begin
-             bX := 2*arccos(cos(Fc)*cos(Lc/2))*cos(Fc)*sin(Lc/2)/
-               sqrt(1-sqr(cos(Fc)*cos(Lc/2)));
-             bY := arccos(cos(Fc)*cos(Lc/2))*sin(Fc)/
-               sqrt(1-sqr(cos(Fc)*cos(Lc/2)));
+          46: // Perspektív
+            begin
+              bX := Lc * Cos(betan);
+              bY := (beta0 * Cos(betan) * (1 - Cos(Fc)) + Sin(Fc) * Cos(betan)) / Cos(Fc);
             end;
-       102: begin
-             bX := (cos(arcus(fis))*Lc+2*arccos(cos(Fc)*cos(Lc/2))*cos(Fc)*sin(Lc/2)/
-               sqrt(1-sqr(cos(Fc)*cos(Lc/2))))/2;
-             bY := (Fc+arccos(cos(Fc)*cos(Lc/2))*sin(Fc)/
-               sqrt(1-sqr(cos(Fc)*cos(Lc/2))))/2;
-            end;
-       103: begin
-             bX := 0.93541*sqrt(8)*cos(Fc)*sin(Lc/2)/sqrt(cos(Fc)*cos(Lc/2)+1);
-             bY := sqrt(2)/0.93541*sin(Fc)/sqrt(cos(Fc)*cos(Lc/2)+1);
-            end;
-       104: begin
-             ss := 0.90631*sin(Fc);
-             cc := sqrt(1-sqr(ss));
-             bb := sqrt(2/(1+cc*cos(Lc/3)));
-             bX := 2.66723*cc*bb*sin(Lc/3);
-             bY := 1.24104*ss*bb;
-            end;
-       105: begin
-             ss := sin(Lc/2);
-             cc := cos(Lc/2);
-             tt := sin(Fc/2)/(cos(Fc/2)+cc*sqrt(2*cos(Fc)));
-             bb := sqrt(2/(1+sqr(tt)));
-             qq := sqrt((cos(Fc/2)+sqrt(cos(Fc)/2)*(cc+ss))/
-               (cos(Fc/2)+sqrt(cos(Fc)/2)*(cc-ss)));
-             bX := 5.828427125*(-2*ln(qq)+bb*(qq-1/qq));
-             bY := 5.828427125*(-2*arctan(tt)+bb*tt*(qq+1/qq))
-            end;
-       106: begin
-               aa := sqrt(1-sqr(tan(Fc/2)));
-               cc := 1+aa*cos(Lc/2);
-               pp := sin(Lc/2)*aa/cc;
-               qq := tan(Fc/2)/cc;
-               bX := 4/3*pp*(3+sqr(pp)-3*sqr(qq));
-               bY := 4/3*qq*(3+3*sqr(pp)-sqr(qq));
-            end;
-       107: begin
-             bX := (1+cos(Fc))*sin(Lc/2);
-             bY := (1+sin(betan)-cos(betan))/2+sin(Fc)*cos(betan)-
-               (1+cos(Fc))*sin(betan)*cos(Lc/2);
-             if fin<>0 then beta0 := -arctan(cos(Lc/2)/tan(betan))
-             else beta0 := -Pi/2;
-            end;
-       108:begin
-             bX := Lc;
-             gg := 4.478461;
-             bb := Lc/2*11/12;
-             if bb<-Pi/4 then aa := sqrt((sqr(Pi)/16-sqr(-bb-Pi/4))*9/sqr(Pi)*16)
-             else
-             if bb<0 then aa := gg*3/2*sin(2/3*bb+2*Pi/3)-1.5*gg+3
-             else
-             if bb<Pi/6 then aa := gg*sin(bb+4*Pi/3)+gg+1.5
-             else
-             if bb<Pi/3 then aa := sin(6*bb+Pi/2)/4+1.75
-             else aa := sqrt((sqr(Pi)/36-sqr(bb-Pi/3))*4/sqr(Pi)*36);
-             bY := aa*Fc/Pi*2;
-           end;
-       109:begin
-             bX := Lc;
-             bY := fiah*sin(Lc*fih)/fih+Fc;
-           end;
-       110:begin
-             bX := Lc;
-             bY := fiah*sin(Lc*fih)/fih+sin(Fc);
-           end;
-
           end;
-          aX := Trunc(bX*EARTHRADIUS/1000/Scale);
-          aY := Trunc(bY*EARTHRADIUS/1000/Scale);
+          aX := Trunc(bX * EARTHRADIUS / 1000 / Scale);
+          aY := Trunc(bY * EARTHRADIUS / 1000 / Scale);
+        end;
+      3: // Képzetes kúpvetületek
+        begin
+          case AktivVetulet of
+          60: // Bonne-féle
+            begin
+              p := ce - Fc;
+              n := Cos(Fc) / p * Lc;
+              bX := p * Sin(n);
+              bY := ce - p * Cos(n);
+            end;
+          61: // Werner-féle
+            begin
+              p := ce - Fc;
+              if p < 0.001 then
+                n := 0
+              else
+                n := Cos(Fc) / p * Lc;
+              bX := p * Sin(n);
+              bY := ce - p * Cos(n);
+            end;
+          62: // Egyszerû/amerikai polikónikus
+            begin
+              if Fc = 0 then begin
+                bX := Lc;
+                bY := 0;
+              end else begin
+                p := cotan(Fc);
+                n := Lc * Sin(Fc);
+                bX := Sin(n) * cotan(Fc);
+                bY := fia * Fc + (1 - Cos(n)) * cotan(Fc);
+              end;
+            end;
+          63: // Ortogonális polikónikus
+            begin
+              if Fc = 0 then begin
+                bX := Lc;
+                bY := 0;
+              end else begin
+                n := 2 * Arctan(Lc/2 * Sin(Fc));
+                p := cotan(Fc);
+                bX := Sin(n) * p;
+                bY := fia * Fc + (1 - Cos(n)) * p;
+              end;
+            end;
+          64: // Területtartó polikónikus
+            begin
+              qq := Fc;
+              if Abs(Fc) < 0.02 then
+                Fc := 0.001;
+              PsziSzamito(n);
+              p := cotan(Fc);
+              bX := Sin(n) * p;
+              bY := fia * Fc + (1 - Cos(n)) * p;
+              Fc := qq;
+            end;
+          65: // Szögtartó polikónikus
+            begin
+              if Fc = 0 then begin
+                bX := 2 * Tan(Lc/2);
+                bY := 0;
+              end else begin
+                n := 2 * Arctan(Tan(Fc/2) * Tan(Lc/2));
+                p := cotan(Fc);
+                bX := Sin(n) * p;
+                bY := 1 / Sin(Fc) - p * Cos(n);
+              end;
+            end;
+          66: // Van der Grinten I.
+            begin
+              bb := Abs(2 * Fc / Pi);
+              cc := Sqrt(1 - Sqr(bb));
+              if Abs(Fc) < 0.001 then begin
+                bX := Lc;
+                bY := 0;
+              end else if Abs(Lc) < 0.001 then begin
+                bX := 0;
+                bY := Sgn(Fc) * Pi * bb / (1 + cc);
+              end else if Pi/2 - Abs(Fc) < 0.001 then begin
+                bX := 0;
+                bY := Sgn(Fc) * Pi;
+              end else begin
+                aa := Abs(Pi / Lc - Lc / Pi) / 2;
+                gg := cc / (bb + cc - 1);
+                pp := gg * (2 / bb - 1);
+                qq := Sqr(aa) + gg;
+                ss := Sqr(pp) + Sqr(aa);
+                tt := gg - Sqr(pp);
+                bX := Sgn(Lc) * Pi * (aa * tt + Sqrt(Sqr(aa * tt) - ss * (Sqr(gg) - Sqr(pp)))) / ss;
+                bY := Sgn(Fc) * Pi * (pp * qq - aa * Sqrt(ss * (Sqr(aa) + 1) - Sqr(qq))) / ss;
+              end;
+            end;
+          67: // Van der Grinten II.
+            begin
+              bb := Abs(2 * Fc / Pi);
+              cc := Sqrt(1 - Sqr(bb));
+              if Abs(Lc) < 0.001 then begin
+                bX := 0;
+                bY := Sgn(Fc) * Pi * bb / (1 + cc);
+              end else begin
+                aa := Abs(Pi / Lc - Lc / Pi) / 2;
+                gg := (cc * Sqrt(1 + Sqr(aa)) - aa * Sqr(cc)) / (1 + Sqr(aa * bb));
+                bX := Sgn(Lc) * Pi * gg;
+                bY := Sgn(Fc) * Pi * Sqrt(1 - Sqr(gg) - 2 * aa * gg);
+              end;
+            end;
+          68: // Van der Grinten IV.
+            begin
+              if Abs(Fc) < 0.001 then begin
+                bX := Lc;
+                bY := 0;
+              end else if (Abs(Lc) < 0.001) or (Pi/2 - Abs(Fc) < 0.001) then begin
+                bX := 0;
+                bY := Fc;
+              end else begin
+                bb := Abs(2 * Fc / Pi);
+                cc := (8 * bb - Sqr(Sqr(bb)) - 2 * Sqr(bb) - 5) / (2 * Sqr(bb) * bb - 2 * Sqr(bb));
+                gg := Sgn(Abs(Lc) - Pi/2) * Sqrt(Sqr(2 * Lc / Pi + Pi / 2 / Lc) - 4);
+                pp := Sqr(bb + cc) * (Sqr(bb) + Sqr(cc * gg) - 1) + (1 - Sqr(bb)) * (Sqr(bb)*
+                     (Sqr(bb + 3 * cc) + 4 * Sqr(cc)) + 12 * bb * Sqr(cc) * cc + 4 * Sqr(Sqr(cc)));
+                qq := (gg * (Sqr(bb + cc) + Sqr(cc) - 1) + 2 * Sqrt(pp)) / (4 * (Sqr(bb + cc)) + Sqr(gg));
+                bX := Sgn(Lc) * Pi * qq / 2;
+                bY := Sgn(Fc) * Pi/2 * Sqrt(1 + gg * Abs(qq) - Sqr(qq));
+              end;
+            end;
+          69: // Lagrange-féle
+            begin
+              if Pi/2 - Abs(Fc) < 0.001 then begin
+                bX := 0;
+                bY := 2 * Sgn(Fc);
+              end else begin
+                aa := Exp((1/2 / ce) * Ln((1 + Sin(betan)) / (1 - Sin(betan))));
+                bb := Exp((1/2 / ce) * Ln((1 + Sin(Fc)) / (1 - Sin(Fc))));
+                gg := aa * bb;
+                cc := (gg + 1 / gg) / 2 + Cos(Lc / ce);
+                bX := 2 * Sin(Lc / ce) / cc;
+                bY := (gg - 1 / gg) / cc;
+              end;
+            end;
+          70: // Fournier I.
+            begin
+              if Abs(Lc) < 0.001 then begin
+                bX := 0;
+                bY := Fc;
+              end else if Abs(Fc) < 0.001 then begin
+                bX := Lc;
+                bY := 0;
+              end else if Abs(Pi/2 - Abs(Lc)) < 0.001 then begin
+                bX := Lc * Cos(Fc);
+                bY := Pi/2 * Sin(Fc);
+              end else begin
+                cc := 2.4674011;
+                pp := Abs(Pi * Sin(Fc));
+                ss := (cc - Sqr(Fc)) / (pp - 2 * Abs(Fc));
+                aa := Sqr(Lc) / cc - 1;
+                bY := Sgn(Fc) * (Sqrt(Sqr(ss) - aa * (cc - pp * ss - Sqr(Lc))) - ss) / aa;
+                bX := Sgn(Lc) * Abs(Lc) * Sqrt(1 - Sqr(bY) / cc);
+              end;
+            end;
+          end;
+          aX := Trunc(bX * EARTHRADIUS / 1000 / Scale);
+          aY := Trunc(bY * EARTHRADIUS / 1000 / Scale);
+        end;
+      4: // Képzetes hengervetületek
+        begin
+          case AktivVetulet of
+          80: // Mercator-Sanson-féle
+            begin
+              bX := Cos(Fc)*Lc;
+              bY := Fc;
+            end;
+          81: // Kavrajszkij I.
+            begin
+              bX := 0.877382675 * Lc * Sqrt(1 - 0.75 * Sqr(Sin(Fc)));
+              bY := 1.316074013 * Arcsin(0.866025404 * Sin(Fc));
+            end;
+          82: // Eckert V.
+            begin
+              bX := 0.882025543 * Lc * (Cos(Fc) + 1) / 2;
+              bY := 0.882025543 * Fc;
+            end;
+          83: // Eckert VI.
+            begin
+              PsziSzamito(pszi);
+              bX := 0.882025543 * Lc * (Cos(pszi) + 1) / 2;
+              bY := 0.882025543 * pszi;
+            end;
+          84: // Apianus II.
+            begin
+              bY := Fc;
+              bX := 1 - 4 * Sqr(Fc / Pi);
+              if bX <= 0 then
+                bX := 0
+              else
+                bX := Lc * Sqrt(bX);
+            end;
+          85: // Mollweide-féle
+            begin
+              PsziSzamito(pszi);
+              bX := 0.900316316 * Lc * Cos(pszi);
+              bY := 1.414213562 * Sin(pszi);
+            end;
+          86: // Eckert III.
+            begin
+              bX := 1 - 4 * Sqr(Fc / Pi);
+              if bX <= 0 then
+                bX := Lc / 2
+              else
+                bX := 0.4222382 * Lc * (1 + Sqrt(bX));
+              bY := 0.844476401 * Fc;
+           end;
+          87: // Eckert IV.
+            begin
+              PsziSzamito(pszi);
+              bY := 0.844476401 * Pi/2 * Sin(pszi);
+              bX := 0.4222382 * Lc * (1 + Cos(pszi));
+            end;
+          88: // Kavrajszkij II.
+            begin
+              bY := Fc;
+              bX := 0.866025404 * Lc * Sqrt(1 - 0.303963551 * Sqr(Fc));
+            end;
+          89: // Érdi-Krausz-féle
+            begin
+              if Abs(Fc) < Arcus(fis) then begin
+                bX := 0.960415 * Sqrt(1 - 0.64 * Sqr(Sin(Fc))) * Lc;
+                bY := 1.30152 * Arcsin(0.8 * Sin(Fc));
+              end else begin
+                PsziSzamito(pszi);
+                if fis < 65 then begin
+                  bX := 1.070223*Cos(pszi) * Lc;
+                  bY := 1.681102*Sin(pszi) - Sgn(Fc) * 0.285475;
+                end else begin
+                  bX := 1.249039*Cos(pszi) * Lc;
+                  bY := 1.961985*Sin(pszi) - Sgn(Fc) * 0.583828;
+                end;
+              end;
+            end;
+          90: // Goode-féle
+            begin
+              if Fc <= 0 then begin
+                if Lc <= Arcus(-100) then
+                  aa := Arcus(-160)
+                else if Lc <= Arcus(-20) then
+                  aa := Arcus(-60)
+                else if Lc <= Arcus(80) then
+                  aa := Arcus(30)
+                else
+                  aa := Arcus(140);
+              end else begin
+                if Lc <= Arcus(-40) then
+                  aa := Arcus(-100)
+                else
+                  aa := Arcus(30);
+              end;
+              if Abs(Fc) <= Arcus(40.7333) then begin
+                bX := Cos(Fc) * (Lc - aa) + aa;
+                bY := Fc;
+              end else begin
+                PsziSzamito(pszi);
+                bX := 0.900316316 * (Lc - aa) * Cos(pszi) + aa;
+                bY := 1.414213562* Sin(pszi) - Sgn(Fc) * 0.05280;
+              end;
+            end;
+          91: // Baranyi II.
+            begin
+              bY := Sgn(Fc) * (0.95 * Abs(Fc) + 0.9 / Pi * Sqr(Fc));
+              if Abs(Fc) < 1.221730476 then begin
+                pszi := Arcsin(bY / 1.84466);
+                bX := Lc/Pi*(Pi - 1.84466 + 1.84466 * Cos(pszi));
+              end else begin
+                pszi := Arccos((4.39461 - (0.7 * Pi - Abs(bY))) / 4.39461);
+                bX := 4.39461 * Sin(pszi) * Lc / Pi;
+              end;
+            end;
+          92: // Baranyi IV.
+            begin
+              bY := 0.0273759 * Sqr(Sqr(Fc)) * Fc - 0.107505 * Sqr(Fc) * Abs(Fc) * Fc + 0.112579 * Sqr(Fc) * Fc + Fc;
+              if Abs(Fc) <= 1.362578547 then
+                bX := (1.22172 + Sqrt(2.115393 - Sqr(bY))) * Ln(0.11679 * Abs(Lc) + 1) / 0.31255 * Sgn(Lc)
+              else
+                bX := Sqrt(38.4308 - Sqr(4.58448 + Abs(bY))) * Ln(0.11679 * Abs(Lc) + 1) / 0.31255 * Sgn(Lc);
+            end;
+          93: // Robinson-féle
+            begin
+              bX := (2.6666 - 0.3670 * Sqr(Fc) - 0.15 * Sqr(Sqr(Fc)) + 0.0379 * Sqr(Sqr(Fc)) * Sqr(Fc)) * Lc / Pi;
+              bY := 0.96047 * Fc - 0.00857 * Exp(6.41 * Ln(Abs(Fc))) * Sgn(Fc);
+            end;
+          94: // Apianus I.
+            begin
+              bY := Fc;
+              if (Lc = 0) or ((Abs(Fc) > Arcus(89.9)) and ((Felgomb) or (Abs(Lc) < Arcus(91)))) then
+                bX := 0
+              else begin
+                p := (Sqr(Pi/2) + Sqr(Lc)) / 2 / Abs(Lc);
+                bX := (Abs(Lc) - p + Sqrt(Sqr(p) - Sqr(Fc))) * Sgn(Lc);
+              end;
+            end;
+          95: // Bacon-féle
+            begin
+              bY := Pi/2 * Sin(Fc);
+              if (Abs(Lc) < 0.001) or ((Abs(Fc) > Arcus(89.9)) and ((Felgomb) or (Abs(Lc) < Arcus(91)))) then
+                bX := 0
+              else begin
+                bb := (Sqr(Pi/2) / Abs(Lc) + Abs(Lc)) / 2;
+                if Sqr(bb) > Sqr(bY) then
+                  gg := Sqrt(Sqr(bb) - Sqr(bY))
+                else
+                  gg := 0;
+                bX := Sgn(Lc) * (Abs(Lc) - bb + gg);
+              end;
+            end;
+          96: // Ortelius-féle
+            begin
+              bY := Fc;
+              if Lc = 0 then
+                bX := 0
+              else begin
+                p := (Sqr(Pi/2) + Sqr(Lc)) / 2 / Abs(Lc);
+                if Abs(Lc) <= Pi/2 then
+                  bX := (Abs(Lc) - p + Sqrt(Sqr(p) - Sqr(Fc))) * Sgn(Lc)
+                else begin
+                  if Abs(Fc) >= Pi/2 - 0.001 then
+                    bX := (Abs(Lc) - Pi/2) * Sgn(Lc)
+                  else
+                    bX := (Abs(Lc) - Pi/2 + Sqrt(Sqr(Pi/2) - Sqr(Fc))) * Sgn(Lc);
+                end;
+              end;
+            end;
+          97: // Donis-féle
+            begin
+              bY := Fc;
+              bX := Lc * (Pi/2 - Abs(Fc)) / (Pi/2);
+            end;
+          98: // Collignon-féle
+            begin
+              if (Abs(Lc) < 0.001) or (Abs(Fc) > Arcus(89.9)) then
+                bX := 0
+              else
+                bX := 2 * Sqrt(2) * Lc * Sin((Pi/2 - Abs(Fc)) / 2) / Sqrt(Pi);
+              bY := Sqrt(Pi) * (1 - 1.41421356 * Sin((Pi/2 - Abs(Fc)) / 2)) * Sgn(Fc);
+            end;
+          99: // Eckert I.
+            begin
+              bX := Lc / Pi * (Pi - Abs(Fc));
+              bY := Fc;
+            end;
+          180: // Eckert II.
+            begin
+              bX := 0.460658866 * Lc * Sqrt(4 - 3 * Sin(Abs(Fc)));
+              bY := 1.447202509 * Sgn(Fc) * (2 - Sqrt(4 - 3 * Sin(Abs(Fc))));
+            end;
+          181: // Van der Grinten III.
+            begin
+              bb := Abs(2 * Fc / Pi);
+              cc := Sqrt(1 - Sqr(bb));
+              if Pi/2 - Abs(Fc) < 0.001 then begin
+                bX := 0;
+                bY := Sgn(Fc) * Pi;
+              end else if Abs(Fc) < 0.0001 then begin
+                bX := Lc;
+                bY := 0;
+              end else if Abs(Lc) < 0.0001 then begin
+                bX := 0;
+                bY := Sgn(Fc) * Pi * bb / (1 + cc);
+              end else begin
+                aa := Abs(Pi / Lc - Lc / Pi) / 2;
+                gg := bb / (1 + cc);
+                bX := Sgn(Lc) * Pi * (Sqrt(Sqr(aa) + 1 - Sqr(gg)) - aa);
+                bY := Sgn(Fc) * Pi * gg;
+              end;
+            end;
+          182: // Oldfield I.
+            begin
+              bY := Fc;
+              gg := 4.478461;
+              if Fc < -Pi/4 then
+                aa := 3 * Sin(2 * Fc + Pi)
+              else if Fc < 0 then
+                aa := gg * 3/2 * Sin(2/3 * Fc + 2 * Pi/3) - 1.5 * gg + 3
+              else if Fc < Pi/6 then
+                aa := gg * Sin(Fc + 4 * Pi/3) + gg + 1.5
+              else if Fc < Pi/3 then
+                aa := Sin(6 * Fc + Pi/2) / 4 + 1.75
+              else
+                aa := 2 * Sin(3 * Fc - Pi/2);
+              bX := aa * Lc / Pi;
+            end;
+          183: /// Oldfield II.
+            begin
+              bY := Fc;
+              gg := 4.478461;
+              if Fc < -Pi/4 then
+                aa := Sqrt((Sqr(Pi) / 16 - Sqr(-Fc - Pi/4)) * 9 / Sqr(Pi) * 16)
+              else if Fc < 0 then
+                aa := gg * 3/2 * Sin(2/3 * Fc + 2 * Pi/3) - 1.5 * gg + 3
+              else if Fc < Pi/6 then
+                aa := gg * Sin(Fc + 4 * Pi/3) + gg + 1.5
+              else if Fc < Pi/3 then
+                aa := Sin(6 * Fc + Pi/2) / 4 + 1.75
+              else
+                aa := Sqrt((Sqr(Pi) / 36 - Sqr(Fc - Pi/3)) * 4 / Sqr(Pi) * 36);
+              bX := aa * Lc / Pi/2;
+            end;
+          end;
+          aX := Trunc(bX * EARTHRADIUS / 1000 / Scale);
+          aY := Trunc(bY * EARTHRADIUS / 1000 / Scale);
+        end;
+      5: // Egyéb képzetes vetületek
+        begin
+          case AktivVetulet of
+          100: // Hammer-féle
+            begin
+              bX := 2.828427125 * Cos(Fc) * Sin(Lc/2) / Sqrt(1 + Cos(Fc) * Cos(Lc/2));
+              bY := 1.414213562 * Sin(Fc) / Sqrt(1 + Cos(Fc) * Cos(Lc/2));
+            end;
+          101: // Aitoff-féle
+            begin
+              bX := 2 * Arccos(Cos(Fc) * Cos(Lc/2)) * Cos(Fc) * Sin(Lc/2) / Sqrt(1 - Sqr(Cos(Fc) * Cos(Lc/2)));
+              bY := Arccos(Cos(Fc) * Cos(Lc/2)) * Sin(Fc) / Sqrt(1 - Sqr(Cos(Fc) * Cos(Lc/2)));
+            end;
+          102: // Winkel-féle
+            begin
+              bX := (Cos(Arcus(fis)) * Lc + 2 * Arccos(Cos(Fc) * Cos(Lc/2)) * Cos(Fc) * Sin(Lc/2) /
+                    Sqrt(1 - Sqr(Cos(Fc) * Cos(Lc/2)))) / 2;
+              bY := (Fc + Arccos(Cos(Fc) * Cos(Lc/2)) * Sin(Fc) / Sqrt(1 - Sqr(Cos(Fc) * Cos(Lc/2)))) / 2;
+            end;
+          103: // Briesemeister-fél
+            begin
+              bX := 0.93541 * Sqrt(8) * Cos(Fc) * Sin(Lc/2) / Sqrt(Cos(Fc) * Cos(Lc/2) + 1);
+              bY := Sqrt(2) / 0.93541 * Sin(Fc) / Sqrt(Cos(Fc) * Cos(Lc/2) + 1);
+            end;
+          104: // Wagner VII.
+            begin
+              ss := 0.90631 * Sin(Fc);
+              cc := Sqrt(1 - Sqr(ss));
+              bb := Sqrt(2 / (1 + cc * Cos(Lc/3)));
+              bX := 2.66723 * cc * bb * Sin(Lc/3);
+              bY := 1.24104 * ss * bb;
+            end;
+          105: // Eisenlohr-féle
+            begin
+              ss := Sin(Lc / 2);
+              cc := Cos(Lc / 2);
+              tt := Sin(Fc / 2) / (Cos(Fc/2) + cc * Sqrt(2 * Cos(Fc)));
+              bb := Sqrt(2 / (1 + Sqr(tt)));
+              qq := Sqrt((Cos(Fc/2) + Sqrt(Cos(Fc) / 2) * (cc + ss)) / (Cos(Fc/2) + Sqrt(Cos(Fc) / 2) * (cc - ss)));
+              bX := 5.828427125 * (-2 * Ln(qq) + bb * (qq - 1 / qq));
+              bY := 5.828427125 * (-2 * Arctan(tt) + bb * tt * (qq + 1 / qq));
+            end;
+          106: // August-féle
+            begin
+              aa := Sqrt(1 - Sqr(Tan(Fc/2)));
+              cc := 1 + aa * Cos(Lc/2);
+              pp := Sin(Lc/2) * aa / cc;
+              qq := Tan(Fc/2) / cc;
+              bX := 4 / 3 * pp * (3 + Sqr(pp) - 3 * Sqr(qq));
+              bY := 4 / 3 * qq * (3 + 3 * Sqr(pp) - Sqr(qq));
+            end;
+          107: // Armadillo
+            begin
+              bX := (1 + Cos(Fc)) * Sin(Lc/2);
+              bY := (1 + Sin(betan) - Cos(betan)) / 2 + Sin(Fc) * Cos(betan) - (1 + Cos(Fc)) * Sin(betan) * Cos(Lc/2);
+              if fin <> 0 then
+                beta0 := -Arctan(Cos(Lc/2) / Tan(betan))
+              else
+                beta0 := -Pi/2;
+            end;
+          108: // Oldfield III.
+            begin
+              bX := Lc;
+              gg := 4.478461;
+              bb := Lc / 2 * 11 / 12;
+              if bb < -Pi/4 then
+                aa := Sqrt((Sqr(Pi) / 16 - Sqr(-bb - Pi/4)) * 9 / Sqr(Pi) * 16)
+              else if bb < 0 then
+                aa := gg * 3/2 * Sin(2/3 * bb + 2 * Pi/3) - 1.5 * gg + 3
+              else if bb < Pi/6 then
+                aa := gg * Sin(bb + 4 * Pi/3) + gg + 1.5
+              else if bb < Pi/3 then
+                aa := Sin(6 * bb + Pi/2) / 4 + 1.75
+              else
+                aa := Sqrt((Sqr(Pi) / 36 - Sqr(bb - Pi/3)) * 4 / Sqr(Pi) * 36);
+              bY := aa * Fc / Pi * 2;
+            end;
+          109: // Egyszerû hullámvetület
+            begin
+              bX := Lc;
+              bY := fiah * Sin(Lc * fih) / fih + Fc;
+            end;
+          110: // Lambert-féle hullámvetület
+            begin
+              bX := Lc;
+              bY := fiah * Sin(Lc * fih) / fih + Sin(Fc);
+            end;
+          end;
+          aX := Trunc(bX * EARTHRADIUS / 1000 / Scale);
+          aY := Trunc(bY * EARTHRADIUS / 1000 / Scale);
         end;
       end;
     end;
 
     procedure Vizsgal;
-      var x12,y12: Integer;
-          fi12,la12: Double;
+      var
+        x12, y12: Integer;
+        fi12, la12: Double;
 
       procedure hatarszamito(var x12, y12 : Integer);
         function hataron(a1, a2, b1, b2, top : Double): Double;
         begin
-          result := a1 + (a2 - a1) * (top - b1) / (b2 - b1);
+          Result := a1 + (a2 - a1) * (top - b1) / (b2 - b1);
         end;
       begin
         if not (AktivVetulet in [65,94,95,98]) and (fi12 < Arcus(minfi)) then begin
@@ -1642,7 +1693,7 @@ implementation
 
         // Apianus I., Bacon-féle, Collignon-féle vetület
         if (AktivVetulet in [94,95,98]) then begin
-          if (Felgomb) and (la12>arcus(90)) then begin
+          if (Felgomb) and (la12 > Arcus(90)) then begin
             x12 := Trunc(hataron(x1, x2, Lca, Lc, Arcus(90)));
             y12 := Trunc(hataron(y1, y2, Lca, Lc, Arcus(90)));
           end;
@@ -1652,31 +1703,31 @@ implementation
           end;
         end;
 
-        if x12 < Baltop then begin
-          x12 := Baltop;
-          y12 := Trunc(hataron(y1, y2, x1, x2, Baltop));
+        if x12 < BalTop then begin
+          x12 := BalTop;
+          y12 := Trunc(hataron(y1, y2, x1, x2, BalTop));
         end;
-        if x12 > Jobbtop then begin
-          x12 := Jobbtop;
-          y12 := Trunc(hataron(y1, y2, x1, x2, Jobbtop));
+        if x12 > JobbTop then begin
+          x12 := JobbTop;
+          y12 := Trunc(hataron(y1, y2, x1, x2, JobbTop));
         end;
-        if y12 < Lenntop then begin
-          y12 := Lenntop;
-          x12 := Trunc(hataron(x1, x2, y1, y2, Lenntop));
+        if y12 < LennTop then begin
+          y12 := LennTop;
+          x12 := Trunc(hataron(x1, x2, y1, y2, LennTop));
         end;
-        if y12>Fenntop then begin
-          y12 := Fenntop;
-          x12 := Trunc(hataron(x1, x2, y1, y2, Fenntop));
+        if y12 > FennTop then begin
+          y12 := FennTop;
+          x12 := Trunc(hataron(x1, x2, y1, y2, FennTop));
         end;
       end; // procedure hatarszamito
 
       function kintie : Boolean;
       begin
-        if (x2 < Baltop) or (x2 > Jobbtop) or (y2 < Lenntop) or (y2 > Fenntop)
+        if (x2 < BalTop) or (x2 > JobbTop) or (y2 < LennTop) or (y2 > FennTop)
         or ((AktivVetulet <> 65) and ((Fc < Arcus(minfi)) or ((AktivVetulet in [44,45]) and (Fc > -Arcus(minfi)))))
-        or ( AktivVetulet =  65) and (abs(Lc) > Arcus(minfi))
+        or ( AktivVetulet =  65) and (Abs(Lc) > Arcus(minfi))
         or ((AktivVetulet = 107) and (Fc < beta0))
-        or ((AktivVetulet in [94,95,98]) and (Felgomb) and (abs(Lc) > Arcus(90))) then
+        or ((AktivVetulet in [94,95,98]) and (Felgomb) and (Abs(Lc) > Arcus(90))) then
           result := True
         else
           result := False;
@@ -1687,23 +1738,23 @@ implementation
         result := False;
         case Csalad of
         0 :
-          if (Lca * Lc < 0) and (abs(Lca - Lc) > Pi / 18) and (abs(Lca - Lc) < 35 * Pi / 18) then
+          if (Lca * Lc < 0) and (Abs(Lca - Lc) > Pi / 18) and (Abs(Lca - Lc) < 35 * Pi / 18) then
             result := True;
         1 :
-          if (abs(Lca - Lc) > Pi / 8) or ((Fc > 1.56) and (abs(Lca - Lc) > Pi / 36))
+          if (Abs(Lca - Lc) > Pi / 8) or ((Fc > 1.56) and (Abs(Lca - Lc) > Pi / 36))
           and not ((AktivVetulet in [23,26]) and (Fc > Pi / 2 - 0.1) and (Fca > Pi / 2 - 0.1))
           then result := True;
         2 :
-          if (Lca * Lc < 0) and (abs(Lca - Lc) > Pi / 2) then
+          if (Lca * Lc < 0) and (Abs(Lca - Lc) > Pi / 2) then
             result := True;
         3 :
-          if (Lca * Lc < 0) and (abs(Lca - Lc) > Pi / 2) then
+          if (Lca * Lc < 0) and (Abs(Lca - Lc) > Pi / 2) then
             result := True;
         4 :
-          if (Lca * Lc < 0) and (abs(Lca - Lc) > Pi / 4) and (abs(Fc) < Pi / 2 - 0.01) and (abs(Fca) < Pi / 2 - 0.01) then
+          if (Lca * Lc < 0) and (Abs(Lca - Lc) > Pi / 4) and (Abs(Fc) < Pi / 2 - 0.01) and (Abs(Fca) < Pi / 2 - 0.01) then
             result := True;
         5 :
-          if (Lca * Lc < 0) and (abs(Lca - Lc) > Pi / 2) then
+          if (Lca * Lc < 0) and (Abs(Lca - Lc) > Pi / 2) then
             result := True;
         end;
 
@@ -1719,7 +1770,7 @@ implementation
                          or ((Lca < Arcus(-40 )) and (Lc  > Arcus(-40))))))
         then result := True;
 
-        if not OptionsForm.HosszuChk.Checked and (sqr(x2 - x1) + sqr(y2 - y1) > 1000000) then
+        if not OptionsForm.HosszuChk.Checked and (Sqr(x2 - x1) + Sqr(y2 - y1) > 1000000) then
           result := True;
       end; // function Atszel
 
@@ -1727,7 +1778,7 @@ implementation
     begin
       if q = 1 then begin
         Kint := False;
-        vetites(x2, y2);
+        Vetites(x2, y2);
         if Kintie then
           Kint := True
         else
@@ -1735,7 +1786,7 @@ implementation
       end else begin
         x1 := x2;
         y1 := y2;
-        vetites(x2, y2);
+        Vetites(x2, y2);
 
         if not Kint then begin
           if kintie then begin
@@ -1853,8 +1904,8 @@ implementation
       end;
 
       if not Result then begin
-        UjForm.Visible := True;
-        UjForm.PageControl1.ActivePage := UjForm.Tartalombox;
+        SettingsForm.Visible := True;
+        SettingsForm.PageControl1.ActivePage := SettingsForm.Tartalombox;
         FokEd.SetFocus;
         InvalidValueMsg;
       end;
@@ -1889,10 +1940,10 @@ implementation
       Kint := False;
       InvalidValue := False;
 
-      if not Elso and not Zoomol then
+      if not Elso and not ZoomInProgress then
         PrevZoom := Zoom;
 
-      if not Zoomol and Lupe then begin
+      if not ZoomInProgress and ManZoom then begin
         if NagyitasVizsgalo(NagyitasCB.Text) = True then begin
           Zoom := StrToInt(Copy(NagyitasCB.Text, 1, szamhossz2));
         end else begin
@@ -1910,69 +1961,69 @@ implementation
         Exit;
       end;
 
-      if (NagyitasVizsgalo(UjForm.KozMerFokEd.Text) = True) or (UjForm.KozMerFokEd.Text = '0') then begin
-        L0N := StrToInt(UjForm.KozMerFokEd.Text);
-        if abs(L0N) > 180 then
+      if (NagyitasVizsgalo(SettingsForm.KozMerFokEd.Text) = True) or (SettingsForm.KozMerFokEd.Text = '0') then begin
+        L0N := StrToInt(SettingsForm.KozMerFokEd.Text);
+        if Abs(L0N) > 180 then
           InvalidValue := True
         else
-          L0N := arcus(L0N);
+          L0N := Arcus(L0N);
       end else begin
         InvalidValue := True;
       end;
 
       if InvalidValue then begin
-        UjForm.Visible := True;
-        UjForm.PageControl1.ActivePage := UjForm.Vetuletbox;
-        UjForm.KozMerFokEd.SetFocus;
+        SettingsForm.Visible := True;
+        SettingsForm.PageControl1.ActivePage := SettingsForm.Vetuletbox;
+        SettingsForm.KozMerFokEd.SetFocus;
 
         InvalidValueMsg;
         Exit;
       end;
 
-      if not SurusegFokVizsgalo(UjForm.MerSurusegFokEd, 180, MerSurusegFok) then
+      if not SurusegFokVizsgalo(SettingsForm.MerSurusegFokEd, 180, MerSurusegFok) then
         Exit;
-      if not SurusegFokVizsgalo(UjForm.ParSurusegFokEd, 90, ParSurusegFok) then
+      if not SurusegFokVizsgalo(SettingsForm.ParSurusegFokEd, 90, ParSurusegFok) then
         Exit;
 
-      if UjForm.FerdeBtn.Checked then begin
-        if not SurusegFokVizsgalo(UjForm.SegMerSurusegFokEd, 180, SegMerSurusegFok) then
+      if SettingsForm.FerdeBtn.Checked then begin
+        if not SurusegFokVizsgalo(SettingsForm.SegMerSurusegFokEd, 180, SegMerSurusegFok) then
           Exit;
-        if not SurusegFokVizsgalo(UjForm.SegParSurusegFokEd, 90, SegParSurusegFok) then
+        if not SurusegFokVizsgalo(SettingsForm.SegParSurusegFokEd, 90, SegParSurusegFok) then
           Exit;
 
-        if (NagyitasVizsgalo(UjForm.PolusSzelesFokEd.Text) = True) or (UjForm.PolusSzelesFokEd.Text='0') then begin
-          F0 := StrToFloat(UjForm.PolusSzelesFokEd.Text);
-          if abs(F0) > 90 then
+        if (NagyitasVizsgalo(SettingsForm.PolusSzelesFokEd.Text) = True) or (SettingsForm.PolusSzelesFokEd.Text='0') then begin
+          F0 := StrToFloat(SettingsForm.PolusSzelesFokEd.Text);
+          if Abs(F0) > 90 then
             InvalidValue := True
           else
-            F0 := arcus(F0);
+            F0 := Arcus(F0);
         end else begin
           InvalidValue := True;
         end;
 
         if InvalidValue then begin
-          UjForm.Visible := True;
-          UjForm.PageControl1.ActivePage := UjForm.Vetuletbox;
-          UjForm.PolusSzelesFokEd.SetFocus;
+          SettingsForm.Visible := True;
+          SettingsForm.PageControl1.ActivePage := SettingsForm.Vetuletbox;
+          SettingsForm.PolusSzelesFokEd.SetFocus;
 
           InvalidValueMsg;
           Exit;
         end;
 
-        if (NagyitasVizsgalo(UjForm.PolusHosszuFokEd.Text) = True) or (UjForm.PolusHosszuFokEd.Text = '0') then begin
-          L0 := StrToFloat(UjForm.PolusHosszuFokEd.Text);
-          if abs(L0) > 180 then
+        if (NagyitasVizsgalo(SettingsForm.PolusHosszuFokEd.Text) = True) or (SettingsForm.PolusHosszuFokEd.Text = '0') then begin
+          L0 := StrToFloat(SettingsForm.PolusHosszuFokEd.Text);
+          if Abs(L0) > 180 then
             InvalidValue := True
           else
-            L0 := arcus(L0);
+            L0 := Arcus(L0);
         end else begin
           InvalidValue := True;
         end;
 
         if InvalidValue then begin
-          UjForm.Visible := True;
-          UjForm.PageControl1.ActivePage := UjForm.Vetuletbox;
-          UjForm.PolusHosszuFokEd.SetFocus;
+          SettingsForm.Visible := True;
+          SettingsForm.PageControl1.ActivePage := SettingsForm.Vetuletbox;
+          SettingsForm.PolusHosszuFokEd.SetFocus;
 
           InvalidValueMsg;
           Exit;
@@ -2032,21 +2083,21 @@ implementation
 
       Progpos := 0;
       Prog := 0;
-      if UjForm.FokChk.Checked then
+      if SettingsForm.FokChk.Checked then
         Prog := Prog + 25;
-      if UjForm.SegedChk.Checked and UjForm.FerdeBtn.Checked then
+      if SettingsForm.SegedChk.Checked and SettingsForm.FerdeBtn.Checked then
         Prog := Prog + 25;
-      if UjForm.PartChk.Checked then
+      if SettingsForm.PartChk.Checked then
         Prog := Prog + Progpart;
-      if UjForm.HatarChk.Checked then
+      if SettingsForm.HatarChk.Checked then
         Prog := Prog + Proghatar;
-      if UjForm.ToChk.Checked then
+      if SettingsForm.ToChk.Checked then
         Prog := Prog + Progto;
 
-      Ferde := Ujform.FerdeBtn.Checked;
-      Csalad := UjForm.CsaladCB.ItemIndex;
+      Ferde := SettingsForm.FerdeBtn.Checked;
+      Csalad := SettingsForm.CsaladCB.ItemIndex;
 
-      if not Sajt2 then begin
+      if not NeedManScale then begin
         SBHelyX := ScrollBox1.HorzScrollBar.Position;
         SBHelyY := ScrollBox1.VertScrollbar.Position;
       end;
@@ -2077,7 +2128,7 @@ implementation
 
       if not Crop then begin
         {határoló vonalak}
-        Tatuado(UjForm.ParReszletCB.ItemIndex);
+        Tatuado(SettingsForm.ParReszletCB.ItemIndex);
 
         case Csalad of
         0:
@@ -2092,7 +2143,7 @@ implementation
               Vetites(x2, y2);
 
               if q = 0 then
-                Elsotop
+                ElsoTop
               else
                 Topvizsgalo;
             until La<-179;
@@ -2107,19 +2158,19 @@ implementation
 
             repeat
               La := La-Tatu;
-              Lc := arcus(La);
+              Lc := Arcus(La);
 
-              vetites(x2,y2);
+              Vetites(x2,y2);
 
               if q = 0 then
-                Elsotop
+                ElsoTop
               else
                 Topvizsgalo;
               Lca := Lc;
             until Almost(La, -180);
 
             {határoló meridiánok}
-            Tatuado(UjForm.MerReszletCB.ItemIndex);
+            Tatuado(SettingsForm.MerReszletCB.ItemIndex);
 
             for i := 0 to 1 do begin
               Lc := -(Pi - 0.00001) + i * 2 * (Pi - 0.00001);
@@ -2130,9 +2181,9 @@ implementation
                 Fi := Fi-Tatu;
                 if Almost(Fi,-90) then
                   Fi := -89.999;
-                Fc := arcus(Fi);
+                Fc := Arcus(Fi);
 
-                vetites(x2,y2);
+                Vetites(x2,y2);
                 topvizsgalo;
 
                 Fca := Fc;
@@ -2145,31 +2196,31 @@ implementation
             Fc := Arcus(minfi + 0.001);
             Lc := Arcus(179.999);
 
-            vetites(x2,y2);
-            Elsotop;
+            Vetites(x2,y2);
+            ElsoTop;
 
             Fc := Arcus(minfi + 0.001);
             Lc := Arcus(-179.999);
 
-            vetites(x2,y2);
+            Vetites(x2,y2);
             topvizsgalo;
 
             Fc := -Arcus(minfi + 0.001);
             Lc := Arcus(179.999);
 
-            vetites(x2,y2);
+            Vetites(x2,y2);
             topvizsgalo;
 
             Fc := -Arcus(minfi + 0.001);
             Lc := Arcus(-179.999);
 
-            vetites(x2,y2);
+            Vetites(x2,y2);
             topvizsgalo;
           end;
 
         3,4,5 :
           begin
-            Tatuado(UjForm.MerReszletCB.ItemIndex);
+            Tatuado(SettingsForm.MerReszletCB.ItemIndex);
 
             // Oldfield III., Egyszerû hullámvetület, Lambert-féle hullámvetület
             if AktivVetulet in [108,109,110] then begin
@@ -2184,12 +2235,12 @@ implementation
                   La := La-Tatu;
                   if Almost(La, -180) then
                     La := -179.999;
-                  Lc := arcus(La);
+                  Lc := Arcus(La);
 
-                  vetites(x2,y2);
+                  Vetites(x2,y2);
 
                   if q = 0 then
-                    Elsotop
+                    ElsoTop
                   else
                     topvizsgalo;
                   Lca := Lc;
@@ -2209,10 +2260,10 @@ implementation
                     Fi := -89.999;
                   Fc := Arcus(Fi);
 
-                  vetites(x2,y2);
+                  Vetites(x2,y2);
 
                   if q = 0 then
-                    Elsotop
+                    ElsoTop
                   else
                     topvizsgalo;
                   Fca := Fc;
@@ -2224,9 +2275,9 @@ implementation
 
               for i := 0 to 1 do begin
                 if (AktivVetulet in [94,95,98]) and (Felgomb) then
-                  Lc := (2 * i - 1) * arcus(89.999)
+                  Lc := (2 * i - 1) * Arcus(89.999)
                 else
-                  Lc := (2 * i - 1) * arcus(179.999);
+                  Lc := (2 * i - 1) * Arcus(179.999);
                 Fi := -minfi - 0.001 + Tatu;
                 Lca := Lc;
 
@@ -2234,12 +2285,12 @@ implementation
                   Fi := Fi-Tatu;
                   if Almost(Fi, -90) then
                     Fi := -89.999;
-                  Fc := arcus(Fi);
+                  Fc := Arcus(Fi);
 
-                  vetites(x2,y2);
+                  Vetites(x2,y2);
 
                   if q = 0 then
-                    Elsotop
+                    ElsoTop
                   else
                     topvizsgalo;
                   Fca := Fc;
@@ -2252,13 +2303,13 @@ implementation
         // Armadillo
         if (AktivVetulet = 107) and (fin <> 0) then begin
           Lc := 0;
-          Fc := -arctan(cos(Lc / 2) / tan(betan));
-          vetites(x2, y2);
+          Fc := -Arctan(Cos(Lc / 2) / Tan(betan));
+          Vetites(x2, y2);
           topvizsgalo;
         end;
       end;
 
-      if (OptionsForm.MaigazitChk.Checked and not Sajt) or Igazigaz then begin
+      if (OptionsForm.MaigazitChk.Checked and not ManScale) or Igazigaz then begin
         if (Lx * (Szazalek / 100) < Minmargomi) or (Ly * (Szazalek / 100) < Minmargomi) then begin
           margox := Lx - 2 * Minmargomi;
           margoy := Ly - 2 * Minmargomi;
@@ -2276,23 +2327,23 @@ implementation
         4 : q := 50;
         end;
 
-        if margox / (Jobbtop - Baltop) * (Fenntop - Lenntop) > margoy then
-          Scale := q * (Trunc(Scale * (Fenntop - Lenntop) / margoy) div q + 1)
+        if margox / (JobbTop - BalTop) * (FennTop - LennTop) > margoy then
+          Scale := q * (Trunc(Scale * (FennTop - LennTop) / margoy) div q + 1)
         else
-          Scale := q*(Trunc(Scale * (Jobbtop - Baltop) / margox) div q + 1);
+          Scale := q*(Trunc(Scale * (JobbTop - BalTop) / margox) div q + 1);
         MeretaranyEd.Text := IntToStr(Scale);
 
-        Jobbtop := Trunc(Vezuv2 / Scale * Jobbtop);
-        Baltop := Trunc(Vezuv2 / Scale * Baltop);
-        Fenntop := Trunc(Vezuv2 / Scale * Fenntop);
-        Lenntop := Trunc(Vezuv2 / Scale * Lenntop);
+        JobbTop := Trunc(Vezuv2 / Scale * JobbTop);
+        BalTop := Trunc(Vezuv2 / Scale * BalTop);
+        FennTop := Trunc(Vezuv2 / Scale * FennTop);
+        LennTop := Trunc(Vezuv2 / Scale * LennTop);
       end;
 
-      if Crop and Sajt then begin
-        Jobbtop := Trunc(PrevScale / Scale * Jobbtop);
-        Baltop := Trunc(PrevScale / Scale * Baltop);
-        Fenntop := Trunc(PrevScale / Scale * Fenntop);
-        Lenntop := Trunc(PrevScale / Scale * Lenntop);
+      if Crop and ManScale then begin
+        JobbTop := Trunc(PrevScale / Scale * JobbTop);
+        BalTop := Trunc(PrevScale / Scale * BalTop);
+        FennTop := Trunc(PrevScale / Scale * FennTop);
+        LennTop := Trunc(PrevScale / Scale * LennTop);
       end;
 
       TRY
@@ -2300,9 +2351,9 @@ implementation
           Meminfo.dwLength := Sizeof(Meminfo);
           GlobalMemoryStatus(Meminfo);
           MaxBmp := Trunc(0.3 * (Bitmap.Width * Bitmap.Height + 2 * (MemInfo.dwAvailPhys + MemInfo.dwAvailPageFile)));
-          NewBmpSize := Trunc(sqr(Zoom * PrevScale / PrevZoom / Scale) * Bitmap.Width * Bitmap.Height);
+          NewBmpSize := Trunc(Sqr(Zoom * PrevScale / PrevZoom / Scale) * Bitmap.Width * Bitmap.Height);
           if NewBmpSize > MaxBmp then
-            Zoom := Trunc(PrevZoom * Scale / PrevScale * sqrt(MaxBmp / Bitmap.Width /Bitmap.Height));
+            Zoom := Trunc(PrevZoom * Scale / PrevScale * Sqrt(MaxBmp / Bitmap.Width /Bitmap.Height));
           if Zoom * PrevScale / PrevZoom / Scale * Bitmap.Width > 5000 then
             Zoom := Trunc(PrevZoom * Scale / PrevScale * 5000 / Bitmap.Width);
         end;
@@ -2319,8 +2370,8 @@ implementation
 
       if not origomas then begin
         if OptionsForm.KozepigazitChk.Checked then begin
-          OMoveX := Trunc((Baltop + Jobbtop) / 2);
-          OMoveY := Trunc((Fenntop + Lenntop) / 2);
+          OMoveX := Trunc((BalTop + JobbTop) / 2);
+          OMoveY := Trunc((FennTop + LennTop) / 2);
         end else begin
           OMoveX := 0;
           OMoveY := 0;
@@ -2329,36 +2380,53 @@ implementation
 
       if (Mode = DRAWMODE) then begin
 
+        AssignFile(DebugFile, 'debug4.log');
+        Rewrite(DebugFile);
+        WriteLn(DebugFile, 'PPI: ', Format('%g', [PPI]));
+        WriteLn(DebugFile, 'FennTop: ', FennTop);
+        WriteLn(DebugFile, 'LennTop: ', LennTop);
+        WriteLn(DebugFile, 'BalTop: ', BalTop);
+        WriteLn(DebugFile, 'JobbTop: ', JobbTop);
+        WriteLn(DebugFile, 'OMoveX: ', OMoveX);
+        WriteLn(DebugFile, 'OMoveY: ', OMoveY);
+
         if OptionsForm.AbraigazitChk.Checked then begin
+          WriteLn(DebugFile, 'Ly: ', Format('%g', [Ly]));
+          WriteLn(DebugFile, 'Lx: ', Format('%g', [Lx]));
           Valos.Height := Trunc(Ly / 1000 * PPI);
           Valos.Width := Trunc(Lx / 1000 * PPI);
+          WriteLn(DebugFile, 'Valos.Height: ', Valos.Height);
+          WriteLn(DebugFile, 'Valos.Width: ', Valos.Width);
 
-          if (Fenntop - OMoveY > Ly / 2) or (Lenntop - OMoveY < -Ly / 2) then
-            if Fenntop - OMoveY> -Lenntop + OMoveY then
-              Valos.Height := Trunc(2*(Fenntop - OMoveY) / 1000 * PPI)
+          if (FennTop - OMoveY > Ly / 2) or (LennTop - OMoveY < -Ly / 2) then
+            if FennTop - OMoveY> -LennTop + OMoveY then
+              Valos.Height := Trunc(2*(FennTop - OMoveY) / 1000 * PPI)
             else
-              Valos.Height := Trunc(-2 * (Lenntop - OMoveY) / 1000 * PPI);
+              Valos.Height := Trunc(-2 * (LennTop - OMoveY) / 1000 * PPI);
 
-          if (Jobbtop - OMoveX > Lx / 2) or (Baltop - OMoveX < -Lx / 2) then
-            if Jobbtop - OMoveX > -Baltop + OMoveX then
-              Valos.Width := Trunc(2 * (Jobbtop - OMoveX) / 1000 * PPI)
+          if (JobbTop - OMoveX > Lx / 2) or (BalTop - OMoveX < -Lx / 2) then
+            if JobbTop - OMoveX > -BalTop + OMoveX then
+              Valos.Width := Trunc(2 * (JobbTop - OMoveX) / 1000 * PPI)
             else
-              Valos.Width := Trunc(-2 * (Baltop - OMoveX) / 1000 * PPI);
+              Valos.Width := Trunc(-2 * (BalTop - OMoveX) / 1000 * PPI);
 
           lapmovex := 0;
           lapmovey := 0;
           KoMoveX := OMoveX;
           KoMoveY := OMoveY;
         end else begin
-          Valos.Height := Trunc((Fenntop - Lenntop) * PPI / 1000);
-          Valos.Width := Trunc((Jobbtop - Baltop) * PPI / 1000);
-          KoMoveX := Trunc((Baltop + Jobbtop) / 2);
-          KoMoveY := Trunc((Fenntop + Lenntop) / 2);
+          Valos.Height := Trunc((FennTop - LennTop) * PPI / 1000);
+          Valos.Width := Trunc((JobbTop - BalTop) * PPI / 1000);
+          KoMoveX := Trunc((BalTop + JobbTop) / 2);
+          KoMoveY := Trunc((FennTop + LennTop) / 2);
           lapmovex := OMoveX - KoMoveX;
           lapmovey := OMoveY - KoMoveY;
         end;
+        WriteLn(DebugFile, 'Valos.Height: ', Valos.Height);
+        WriteLn(DebugFile, 'Valos.Width: ', Valos.Width);
 
         Lc := ScrollBox1.Width / ScrollBox1.Height;
+        WriteLn(DebugFile, 'Lc: ', Format('%g', [Lc]));
 
         if Valos.Width < Valos.Height * Lc then
           Valos.Width := Trunc(Valos.Height * Lc);
@@ -2368,14 +2436,20 @@ implementation
         Valos.Width := Valos.Width + Trunc(100 * Valos.Width / 1600);
         Valos.Height := Valos.Height + Trunc(70 * Valos.Height / 1100);
 
-        if OptionsForm.AutozoomChk.Checked and not Lupe then begin
+        if OptionsForm.AutozoomChk.Checked and not ManZoom then begin
+          WriteLn(DebugFile, 'ScrollBox1.Width: ', ScrollBox1.Width);
+          WriteLn(DebugFile, 'Valos.Width: ', Valos.Width);
+
           Zoom := Trunc(100 * (ScrollBox1.Width - 4) / Valos.Width);
+          WriteLn(DebugFile, 'Zoom: ', Zoom);
+
           AWidth := ScrollBox1.Width - 4;
           AHeight := ScrollBox1.Height - 4;
         end else begin
           AWidth := Trunc(Zoom / 100 * Valos.Width);
           AHeight := Trunc(Zoom / 100 * Valos.Height);
         end;
+        CloseFile(DebugFile);
 
         repeat
           TRY
@@ -2440,13 +2514,13 @@ implementation
       end;
 
       if not Crop then begin
-        Lenntop := Lenntop - 4;
-        Fenntop := Fenntop + 4;
-        Baltop := Baltop - 4;
-        Jobbtop := Jobbtop + 4;
+        LennTop := LennTop - 4;
+        FennTop := FennTop + 4;
+        BalTop := BalTop - 4;
+        JobbTop := JobbTop + 4;
       end;
 
-      KMEszaki := (UjForm.KezdoMerPolusCB.ItemIndex = 0);
+      KMEszaki := (SettingsForm.KezdoMerPolusCB.ItemIndex = 0);
       ProgressForm.ProgressBar1.Position := 3;
 
       // lap kirajzolása
@@ -2461,7 +2535,7 @@ implementation
                                 OrigoX + Trunc(( Lx / 2 + lapmovex) * PPI * Zoom / 100000),
                                 OrigoY - Trunc(( Ly / 2 + lapmovey) * PPI * Zoom / 100000));
       end;
-      Ferde := Ujform.FerdeBtn.Checked;
+      Ferde := SettingsForm.FerdeBtn.Checked;
 
       // tartalom kirajzolása
       for j := 4 downto 0 do begin
@@ -2469,13 +2543,13 @@ implementation
         if LayersForm.RetegBox.Items[j] = GetLayerName('SEGED') then begin
 
           {segédfokhálózat}
-          if UjForm.Segedchk.Checked and UjForm.Segedchk.Enabled then begin
+          if SettingsForm.Segedchk.Checked and SettingsForm.Segedchk.Enabled then begin
             Vastagado(OptionsForm.SegedVasEd.Value);
             Ferde := False;
-            Szinado(UjForm.SegSzinCB);
+            Szinado(SettingsForm.SegSzinCB);
 
             {segédhosszúsági körök}
-            Tatuado(UjForm.SegMerReszletCB.ItemIndex);
+            Tatuado(SettingsForm.SegMerReszletCB.ItemIndex);
             for i := 0 to 2 * Trunc(180 / SegMerSurusegFok) do begin
               q := 0;
               Fi := 89.999;
@@ -2488,8 +2562,8 @@ implementation
                   Fi := Fi-Tatu;
                 if Almost(Fi, -90) then
                   Fi := -89.999;
-                Fc := arcus(Fi);
-                Lc := arcus(La);
+                Fc := Arcus(Fi);
+                Lc := Arcus(La);
 
                 Vizsgal;
 
@@ -2508,7 +2582,7 @@ implementation
             end;
 
             {segédszélességi körök}
-            Tatuado(UjForm.SegParReszletCB.ItemIndex);
+            Tatuado(SettingsForm.SegParReszletCB.ItemIndex);
             for i := 0 to 180 div SegParSurusegFok do begin
               if ParSurusegFok * (89 div SegParSurusegFok) - i * SegParSurusegFok < minfi then begin
                 mike := i;
@@ -2541,23 +2615,23 @@ implementation
 
           AssignFile(DebugFile, 'debug1.log');
           Rewrite(DebugFile);
-          Writeln(DebugFile, 'MerSurusegFok', MerSurusegFok);
-          Writeln(DebugFile, 'ParSurusegFok', ParSurusegFok);
-          Szinado(Ujform.FokSzinCB);
+          WriteLn(DebugFile, 'MerSurusegFok', MerSurusegFok);
+          WriteLn(DebugFile, 'ParSurusegFok', ParSurusegFok);
+          Szinado(SettingsForm.FokSzinCB);
 
-          if UjForm.FokChk.Checked then begin
+          if SettingsForm.FokChk.Checked then begin
             {hosszúsági körök}
-            Tatuado(UjForm.MerReszletCB.ItemIndex);
+            Tatuado(SettingsForm.MerReszletCB.ItemIndex);
             loopint := 2 * Trunc(180 / MerSurusegFok);
             i := 0;
 
             repeat
-              Writeln(DebugFile, 'Next step: ', i);
+              WriteLn(DebugFile, 'Next step: ', i);
 
               q := 0;
               Fi := 89.995;
               La := (i - Trunc(180 / MerSurusegFok)) * MerSurusegFok + 0.01;
-              Writeln(DebugFile, i, ' ', La);
+              WriteLn(DebugFile, i, ' ', La);
 
               if Almost(La, 0) then
                 Vastagado(OptionsForm.KezdoVasEd.Value)
@@ -2578,8 +2652,8 @@ implementation
                   Lc := Arcus(La);
                 end;
 
-                Writeln(DebugFile, 'Vizsgal1: ', Fi, ' , ', La);
-                Writeln(DebugFile, 'Vizsgal2: ', Fc, ' , ', Lc);
+                WriteLn(DebugFile, 'Vizsgal1: ', Fi, ' , ', La);
+                WriteLn(DebugFile, 'Vizsgal2: ', Fc, ' , ', Lc);
                 Vizsgal;
                 Lca := Lc;
                 Fca := Fc;
@@ -2595,12 +2669,12 @@ implementation
               end;
 
               i := i+1;
-              Writeln(DebugFile,'end of iteration step no. ', i);
+              WriteLn(DebugFile,'end of iteration step no. ', i);
             until i > loopint;
 
             {térítõk,sarkkörök}
-            Tatuado(UjForm.ParReszletCB.ItemIndex);
-            if UjForm.TeritoChk.Checked then begin
+            Tatuado(SettingsForm.ParReszletCB.ItemIndex);
+            if SettingsForm.TeritoChk.Checked then begin
               for i := 1 to 4 do begin
                 Vastagado(OptionsForm.TeritoVasEd.Value);
                 case i of
@@ -2650,7 +2724,7 @@ implementation
           // határoló vonalak - ezeket a fokhálózat megjelenítésétõl függetlenül kirajzoljuk
           Ferde := True;
           Vastagado(OptionsForm.HaloVasEd.Value);
-          Tatuado(UjForm.ParReszletCB.ItemIndex);
+          Tatuado(SettingsForm.ParReszletCB.ItemIndex);
 
           case Csalad of
           0 : begin
@@ -2685,7 +2759,7 @@ implementation
             until Almost(La, -180);
 
             {határoló meridiánok}
-            Tatuado(UjForm.MerReszletCB.ItemIndex);
+            Tatuado(SettingsForm.MerReszletCB.ItemIndex);
             for i := 0 to 1 do begin
               q := 0;
               Lc := -(Pi - 0.00001) + i * 2 * (Pi - 0.00001);
@@ -2703,7 +2777,7 @@ implementation
             end;
 
             {pólusvonal}
-            Tatuado(UjForm.ParReszletCB.ItemIndex);
+            Tatuado(SettingsForm.ParReszletCB.ItemIndex);
             if AktivVetulet in [20,21,24,25] then begin
               q := 0;
               Fc := Arcus(89.999);
@@ -2714,7 +2788,7 @@ implementation
                 if Almost(La, -180) then
                   La := -179.999;
 
-                Lc := arcus(La);
+                Lc := Arcus(La);
                 q := q+1;
                 Vizsgal;
                 Lca := Lc;
@@ -2726,7 +2800,7 @@ implementation
             begin
               if (Csalad in [2,4,5]) or (AktivVetulet=69) and not (AktivVetulet in [94,95,98,181]) then begin
                 {határoló szélességek}
-                Tatuado(UjForm.ParReszletCB.ItemIndex);
+                Tatuado(SettingsForm.ParReszletCB.ItemIndex);
                 for i := 0 to 1 do begin
                   q := 0;
                   Fc := ( 2 * i - 1) * Arcus(minfi + 0.001);
@@ -2746,7 +2820,7 @@ implementation
               end;
 
               {határoló meridiánok}
-              Tatuado(UjForm.MerReszletCB.ItemIndex);
+              Tatuado(SettingsForm.MerReszletCB.ItemIndex);
               for i := 0 to 1 do begin
                 q := 0;
 
@@ -2774,14 +2848,14 @@ implementation
 
           // Armadillo
           if ((AktivVetulet = 107) and (fin <> 0)) then begin
-            Tatuado(UjForm.ParReszletCB.ItemIndex);
+            Tatuado(SettingsForm.ParReszletCB.ItemIndex);
             q := 0;
             La := 179.999 + Tatu;
 
             repeat
               La := La - Tatu;
               Lc := Arcus(La);
-              Fc := -arctan(cos(Lc / 2) / tan(betan));
+              Fc := -Arctan(Cos(Lc / 2) / Tan(betan));
               q := q + 1;
 
               Vizsgal;
@@ -2831,7 +2905,7 @@ implementation
               until Almost(Fi,-90);
             end;
 
-            Ferde := Ujform.FerdeBtn.Checked;
+            Ferde := SettingsForm.FerdeBtn.Checked;
             Application.ProcessMessages;
 
             if Megse then begin
@@ -2840,17 +2914,17 @@ implementation
             end;
           end;
 
-          SzelesEd.Text := FloatToStr(Convert(3, EgysegCB.ItemIndex, Jobbtop - Baltop));
-          MagasEd.Text  := FloatToStr(Convert(3, EgysegCB.ItemIndex, Fenntop - Lenntop));
+          SzelesEd.Text := FloatToStr(Convert(3, EgysegCB.ItemIndex, JobbTop - BalTop));
+          MagasEd.Text  := FloatToStr(Convert(3, EgysegCB.ItemIndex, FennTop - LennTop));
         end;
 
         SetCurrentDir(ApplDir);
 
         {tengerpartok kirajzolása}
         if LayersForm.RetegBox.Items[j] = GetLayerName('PART') then begin
-          if UjForm.PartChk.Checked then begin
+          if SettingsForm.PartChk.Checked then begin
             Vastagado(OptionsForm.PartVasEd.Value);
-            Szinado(Ujform.PartSzinCB);
+            Szinado(SettingsForm.PartSzinCB);
 
             AssignFile(txt,OptionsForm.parttxt.Text);
             if FileExists(OptionsForm.parttxt.Text) then
@@ -2867,9 +2941,9 @@ implementation
 
         {országhatárok kirajzolása}
         if LayersForm.RetegBox.Items[j] = GetLayerName('HATAR') then begin
-          if UjForm.HatarChk.Checked then begin
+          if SettingsForm.HatarChk.Checked then begin
             Vastagado(OptionsForm.HatarVasEd.Value);
-            Szinado(Ujform.HatarSzinCB);
+            Szinado(SettingsForm.HatarSzinCB);
 
             AssignFile(txt,OptionsForm.hatartxt.Text);
             if FileExists(OptionsForm.hatartxt.Text) then
@@ -2886,9 +2960,9 @@ implementation
 
         {tavak kirajzolása}
         if LayersForm.RetegBox.Items[j] = GetLayerName('TO') then begin
-          if UjForm.Tochk.Checked then begin
+          if SettingsForm.Tochk.Checked then begin
             Vastagado(OptionsForm.ToVasEd.Value);
-            Szinado(Ujform.ToSzinCB);
+            Szinado(SettingsForm.ToSzinCB);
 
             AssignFile(txt,OptionsForm.totxt.Text);
             if FileExists(OptionsForm.totxt.Text) then
@@ -2912,17 +2986,17 @@ implementation
       SBMeret.X := ScrollBox1.Width;
       SBMeret.Y := ScrollBox1.Height;
 
-      if Sajt2 then begin
+      if NeedManScale then begin
         ScrollBox1.HorzScrollBar.Position := Trunc(Abra.Width / SBHelyx * StartPoint.X - ScrollBox1.Width / 2);
         ScrollBox1.VertScrollBar.Position := Trunc(Abra.Height / SBHelyy * StartPoint.y - ScrollBox1.Height / 2);
       end;
 
-      if Zoomol or Lupe2 then begin
+      if ZoomInProgress or NeedManZoom then begin
         ScrollBox1.HorzScrollBar.Position := Trunc(Zoom / PrevZoom * StartPoint.X - ScrollBox1.Width / 2);
         ScrollBox1.VertScrollBar.Position := Trunc(Zoom / PrevZoom * StartPoint.y - ScrollBox1.Height / 2);
       end;
 
-      if (not Zoomol and not Lupe2 and not Sajt2 and not Vetvalt) or Sajt3 then begin
+      if (not ZoomInProgress and not NeedManZoom and not NeedManScale and not Vetvalt) or Sajt3 then begin
         if SBHelyX = 0 then
           ScrollBox1.HorzScrollBar.Position := Trunc((ScrollBox1.HorzScrollBar.Range - ScrollBox1.Width) / 2)
         else
@@ -2943,11 +3017,11 @@ implementation
       if Elso then
         Elso := False;
 
-      if Sajt then
+      if ManScale then
         LaphozBtn.Enabled := True;
 
-      Lupe2 := False;
-      Sajt2 := False;
+      NeedManZoom := False;
+      NeedManScale := False;
       Sajt3 := False;
       Vetvalt := False;
 
@@ -2965,8 +3039,8 @@ implementation
 
       StatusBar1.Panels[2].Text := Vet[AktivVetulet] + ' ' + Plusz;
       if Ferde then
-        StatusBar1.Panels[3].Text := 'Segédpólus: ' + UjForm.PolusSzelesFokEd.Text + ' fok szélesség, ' +
-                                     UjForm.PolusHosszuFokEd.Text + ' fok hosszúság'
+        StatusBar1.Panels[3].Text := 'Segédpólus: ' + SettingsForm.PolusSzelesFokEd.Text + ' fok szélesség, ' +
+                                     SettingsForm.PolusHosszuFokEd.Text + ' fok hosszúság'
       else
         StatusBar1.Panels[3].Text := ' ';
     EXCEPT
@@ -2977,17 +3051,17 @@ implementation
 
   procedure TMainForm.NagyitasCBChange(Sender: TObject);
   begin
-    Zoomol := False;
-    Lupe := True;
-    Lupe2 := True;
-    StartPoint.X := ScrollBox1.HorzScrollBar.Position+Trunc(ScrollBox1.Width/2);
-    StartPoint.y := ScrollBox1.VertScrollBar.Position+Trunc(ScrollBox1.Height/2);
-    if NagyitasCB.ItemIndex=7 then
-                            begin
-                             Lupe := False;
-                             Lupe2 := False;
-                             Exit;
-                            end;
+    ZoomInProgress := False;
+    ManZoom := True;
+    NeedManZoom := True;
+    StartPoint.X := ScrollBox1.HorzScrollBar.Position + Trunc(ScrollBox1.Width / 2);
+    StartPoint.y := ScrollBox1.VertScrollBar.Position + Trunc(ScrollBox1.Height / 2);
+
+    if NagyitasCB.ItemIndex = 7 then begin
+      ManZoom := False;
+      NeedManZoom := False;
+      Exit;
+    end;
   end;
 
   procedure TMainForm.MentesClick(Sender: TObject);
@@ -3020,16 +3094,16 @@ implementation
         if Abra.Picture.Graphic <> nil then
           Abra.Picture.SaveToFile(SaveDialog1.FileName);
       end else begin
-        AssignFile(Filesv, SaveDialog1.FileName);
-        Rewrite(Filesv);
-        Writeln(Filesv, 'in;');
-        Writeln(Filesv, 'ip0 0 ', Trunc(Lx), ' ', Trunc(Ly), ';');
-        Writeln(Filesv, 'sc', -Trunc(Lx/2), ' ', Trunc(Lx/2), ' ', -Trunc(Ly/2), ' ', Trunc(Ly/2), ';');
-        Writeln(Filesv, 'sp1;');
+        AssignFile(OutFile, SaveDialog1.FileName);
+        Rewrite(OutFile);
+        WriteLn(OutFile, 'in;');
+        WriteLn(OutFile, 'ip0 0 ', Trunc(Lx), ' ', Trunc(Ly), ';');
+        WriteLn(OutFile, 'sc', -Trunc(Lx/2), ' ', Trunc(Lx/2), ' ', -Trunc(Ly/2), ' ', Trunc(Ly/2), ';');
+        WriteLn(OutFile, 'sp1;');
 
         Frissites(PLTMODE);
 
-        CloseFile(Filesv);
+        CloseFile(OutFile);
       end;
     end;
   end;
@@ -3041,9 +3115,9 @@ implementation
 
   procedure TMainForm.BeallitClick(Sender: TObject);
   begin
-    UjForm.Visible := True;
-    UjForm.OpenBtnClick(Beallit);
-    UjForm.FormActivate(Beallit);
+    SettingsForm.Visible := True;
+    SettingsForm.OpenBtnClick(Beallit);
+    SettingsForm.FormActivate(Beallit);
   end;
 
   procedure TMainForm.PapirmenuClick(Sender: TObject);
@@ -3061,8 +3135,8 @@ implementation
     OptionsForm.LegalabbEd.Text := Format('%-2.4g ', [Minmargo]) + UNITS[Egyseg].Code;
     PageForm.PapirszelesEd.Text := Format('%-2.7g ', [Lapx[PapirMeret, Egyseg]]) + UNITS[Egyseg].Code;
     PageForm.PapirmagasEd.Text := Format('%-2.7g ', [Lapy[PapirMeret, Egyseg]]) + UNITS[Egyseg].Code;
-    SzelesEd.Text := FloatToStr(Convert(3, EgysegCB.ItemIndex, Jobbtop - Baltop));
-    MagasEd.Text := FloatToStr(Convert(3, EgysegCB.ItemIndex, Fenntop - Lenntop));
+    SzelesEd.Text := FloatToStr(Convert(3, EgysegCB.ItemIndex, JobbTop - BalTop));
+    MagasEd.Text := FloatToStr(Convert(3, EgysegCB.ItemIndex, FennTop - LennTop));
     if PageForm.AlloBtn.Checked then begin
       MainForm.Lapszeles.Text := Format('%-2.6g ', [Lapy[PapirMeret, Egyseg]]);
       MainForm.Lapmagas.Text := Format('%-2.6g ', [Lapx[PapirMeret, Egyseg]]);
@@ -3099,18 +3173,18 @@ implementation
 
   procedure TMainForm.MeretaranyEdKeyPress(Sender: TObject; var Key: Char);
   begin
-   if Key=#27 then begin // ESC
-     Edit1.TabStop := True;
-     Edit1.SetFocus;
-   end else if not (Key in ['0'..'9',#8]) then
-     Key := #0
-   else begin
-     Sajt := True;
-     Sajt2 := True;
-     StartPoint.X := ScrollBox1.HorzScrollBar.Position + Trunc(ScrollBox1.Width/2);
-     StartPoint.y := ScrollBox1.VertScrollBar.Position + Trunc(ScrollBox1.Height/2);
-     SBHelyx := Abra.Width;
-     SBHelyy := Abra.Height;
+    if Key=#27 then begin // ESC
+      Edit1.TabStop := True;
+      Edit1.SetFocus;
+    end else if not (Key in ['0'..'9',#8]) then
+      Key := #0
+    else begin
+      ManScale := True;
+      NeedManScale := True;
+      StartPoint.X := ScrollBox1.HorzScrollBar.Position + Trunc(ScrollBox1.Width/2);
+      StartPoint.y := ScrollBox1.VertScrollBar.Position + Trunc(ScrollBox1.Height/2);
+      SBHelyx := Abra.Width;
+      SBHelyy := Abra.Height;
     end;
   end;
 
@@ -3238,7 +3312,7 @@ implementation
 
   procedure TMainForm.LaphozBtnClick(Sender: TObject);
   begin
-    Sajt := False;
+    ManScale := False;
     Igazigaz := True;
     FrissitClick(LaphozBtn);
     LaphozBtn.Enabled := False;
@@ -3362,21 +3436,23 @@ implementation
   end;
 
   procedure TMainForm.Timer1Timer(Sender: TObject);
+  var
+    NewPos : TPoint;
   begin
     // A Beállítások form kövesse a fõképernyõt
-    FormPos2.x := Left;
-    FormPos2.y := Top;
+    NewPos.x := Left;
+    NewPos.y := Top;
 
-    UjForm.Top := UjForm.Top + FormPos2.y - FormPos1.y;
-    UjForm.Left := UjForm.Left + FormPos2.x - FormPos1.x;
+    SettingsForm.Top := SettingsForm.Top + NewPos.y - FormPos.y;
+    SettingsForm.Left := SettingsForm.Left + NewPos.x - FormPos.x;
 
-    if UjForm.Top < 2 then
-      UjForm.Top := 2;
-    if UjForm.Left < 2 then
-      UjForm.Left := 2;
+    if SettingsForm.Top < 2 then
+      SettingsForm.Top := 2;
+    if SettingsForm.Left < 2 then
+      SettingsForm.Left := 2;
 
-    FormPos1.x := Left;
-    FormPos1.y := Top;
+    FormPos.x := Left;
+    FormPos.y := Top;
 
     // Scrollbar mozgatása
     if ActiveControl = Edit1 then begin
