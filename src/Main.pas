@@ -139,10 +139,15 @@ interface
     Elso: Boolean=True;
     CropScrollHorz, CropScrollVert: Integer;
 
-    // Vetületi paraméterek
-    fi1, fi2, fin: Byte;
-    fik, fih: SmallInt;
-    fis, fia, fiah: Double;
+    // Vetületi paraméterek (parameters* formokon megadva)
+    fin : Byte; // Hossztartó paralelkör pólustávolsága
+    fi1, fi2 : Byte; // Hossztartó paralelkörök pólustávolsága
+    fik : SmallInt; // Legkülsõ kirajzolt paralelkör pólustávolsága / Legkülsõ kirajzolt meridiánok hosszúsága
+    fih : SmallInt;
+    fis : Double;
+    fia : Double; // A vetítési centrum távolsága a földközépponttól (földsugárban)
+                  // A fokhálózat szétnyílását jellemzõ konstans
+    fiah : Double;
     Felgomb : Boolean = True; // Az ábrázolt terület félgömb
 
     Vetvalt : Boolean=True;
@@ -161,7 +166,7 @@ implementation
   uses About, Parameters1, Page, Unit6, Options, Layers, Splash, Parameters2;
 
   var
-    PPI : Double; // A képernyõ felbontása}
+    PPI : Double; // A képernyõ felbontása
     FormPos : TPoint; // A képernyõ pozíciója (bal felsõ sarok)
     SBMeret : TPoint;
     SBHelyX, SBHelyY : SmallInt;
@@ -171,7 +176,7 @@ implementation
 
     Zoom : Integer; // Nagyítás mértéke (%)
     PrevZoom : Integer = 20; // Be- vagy kizoomolás során az elõzõ nagyítás mértéke
-    Scale : Integer; // Térkép méretarányának nevezõje
+    Scale : Integer; // Térkép méretarányának nevezõje (= méretarányszám)
     PrevScale : Integer; // Méretarány változásakor az elõzõ méretarány
 
     VanMeres : Boolean = False;
@@ -760,7 +765,10 @@ implementation
       NewBmpSize: Integer;
 
       minfi: Integer;
-      n, ce, betan, beta1, beta2, beta0: Double;
+
+      // Vetületi számításokhoz szükséges segédértékek
+      n : Double; // Sugárhajlás
+      ce, betan, beta1, beta2, beta0: Double;
       fil1, fil2, fil3: file of Byte;
 
     procedure ElsoTop;
@@ -968,7 +976,8 @@ implementation
       until (Abs(Xb - Xa) < 1.0e-9) or (Fv(Pszi) = 0);
     end; // procedure PsziSzamito
 
-    procedure inicializalo;
+    // Segédváltozók beállítása vetületenként
+    procedure Inicializalo;
     begin
       case AktivVetulet of
       20 : // Ptolemaiosz-féle
@@ -1034,18 +1043,19 @@ implementation
           end;
           n := Sin(betan);
         end;
-      41,43,45,46:
+      41,43,45,46: // Valós hengervetületek
         betan := Arcus(fin);
-      60:
-        ce := Arcus(fin)+cotan(Arcus(fin));
-      61:
+      60: // Bonne-féle
+        ce := Arcus(fin) + cotan(Arcus(fin));
+      61: // Werner-féle
         ce := Pi/2;
-      69:
+      69: // Lagrange-féle
         begin
           ce := fia;
           betan := -Arcus(fik);
         end;
-      107: betan := Arcus(fin);
+      107: // Armadillo
+        betan := Arcus(fin);
       end;
       if AktivVetulet in [27,46] then begin
         if ParametersForm1.IranyCB.ItemIndex = 0 then
@@ -1053,9 +1063,9 @@ implementation
         else
           beta0 := -fia;
       end;
-    end;
+    end; // Inicializalo
 
-    procedure Vetites(var aX, aY : Integer); // Eredménykoordináták mértékegysége ezredinch
+    procedure Vetites(var aX, aY : Integer); // Az eredménykoordináták mértékegysége ezredinch
     var
       Beta : Double; // pólustávolság
       p, bX, bY, pszi : Double;
@@ -1655,7 +1665,7 @@ implementation
           aY := Trunc(bY * EARTHRADIUS / 1000 / Scale);
         end;
       end;
-    end;
+    end; // Vetites
 
     procedure Vizsgal;
       var
@@ -2107,7 +2117,7 @@ implementation
         SBHelyY := 0;
       end;
 
-      inicializalo;
+      Inicializalo;
 
       case AktivVetulet of
       2,3,22,23,27: // Sztereografikus / gnomonikus síkvetület
