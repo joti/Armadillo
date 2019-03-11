@@ -26,15 +26,16 @@ interface
     LayersForm: TLayersForm;
 
   // A rétegek neve
-  const LAYERNAMES : array[0..4] of TCodeName = (
+  const LAYERNAMES : array[0..5] of TCodeName = (
     (Code: 'FOK'; Name: 'Fokhálózat'),
     (Code: 'SEGED'; Name: 'Segédhálózat'),
     (Code: 'PART'; Name: 'Partvonalak'),
     (Code: 'HATAR'; Name: 'Országhatárok'),
-    (Code: 'TO'; Name: 'Tavak'));
+    (Code: 'TO'; Name: 'Tavak'),
+    (Code: 'FOLYO'; Name: 'Folyók'));
 
   // A rétegek alapértelmezett sorrendje
-  const DEFLAYERORDER : array[0..4] of ShortString = ('FOK', 'SEGED', 'TO', 'HATAR', 'PART');
+  const DEFLAYERORDER : array[0..5] of ShortString = ('FOK', 'SEGED', 'TO', 'FOLYO', 'HATAR', 'PART');
 
   function GetLayerName(Code : ShortString) : String;
 

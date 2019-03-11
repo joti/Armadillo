@@ -28,22 +28,22 @@ interface
       Mentes: TMenuItem;
       N1: TMenuItem;
       Szerkesztes: TMenuItem;
-      Frissit: TMenuItem;
-      Teljes: TMenuItem;
+      FrissitMI: TMenuItem;
+      TeljesMI: TMenuItem;
       Segit: TMenuItem;
       Nevjegy: TMenuItem;
-      Beallit: TMenuItem;
+      BeallitasMI: TMenuItem;
       N4: TMenuItem;
       SaveDialog1: TSaveDialog;
-      Papirmenu: TMenuItem;
+      PapirMI: TMenuItem;
       LapszelesImage: TImage;
       Lapszeles: TEdit;
       Lapmagas: TEdit;
       LapmagasImage: TImage;
       Nezet: TMenuItem;
-      Statuszsore: TMenuItem;
-      Eszkoztare: TMenuItem;
-      Meretezoe: TMenuItem;
+      StatuszsorMI: TMenuItem;
+      EszkoztarMI: TMenuItem;
+      MeretezoMI: TMenuItem;
       Eszkoztar: TPanel;
       Meretezo: TPanel;
       MentBtn: TSpeedButton;
@@ -53,7 +53,7 @@ interface
       ZoomShape: TShape;
       Segedshape: TShape;
       FrissitBtn: TSpeedButton;
-      Egyeb: TMenuItem;
+      EgyebMI: TMenuItem;
       TeljesBtn: TSpeedButton;
       StatusBar1: TStatusbar;
       LaphozBtn: TSpeedButton;
@@ -75,26 +75,26 @@ interface
       procedure AbraMouseUp(Sender: TObject; Button: TMouseButton;
         Shift: TShiftState; X, Y: Integer);
       procedure FormCreate(Sender: TObject);
-      procedure FrissitClick(Sender: TObject);
+      procedure FrissitBtnClick(Sender: TObject);
       procedure NagyitasCBChange(Sender: TObject);
-      procedure MentesClick(Sender: TObject);
+      procedure MentBtnClick(Sender: TObject);
       procedure NevjegyClick(Sender: TObject);
-      procedure BeallitClick(Sender: TObject);
-      procedure PapirmenuClick(Sender: TObject);
+      procedure BeallitasMIClick(Sender: TObject);
+      procedure PapirMIClick(Sender: TObject);
       procedure EgysegCBChange(Sender: TObject);
-      procedure StatuszsoreClick(Sender: TObject);
+      procedure StatuszsorMIClick(Sender: TObject);
       procedure NagyitasCBKeyPress(Sender: TObject; var Key: Char);
       procedure MeretaranyEdKeyPress(Sender: TObject; var Key: Char);
       procedure FormResize(Sender: TObject);
       procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-      procedure EszkoztareClick(Sender: TObject);
+      procedure EszkoztarMIClick(Sender: TObject);
       procedure NagyitBtnClick(Sender: TObject);
       procedure KicsinyitBtnClick(Sender: TObject);
       procedure VagBtnClick(Sender: TObject);
-      procedure TeljesClick(Sender: TObject);
-      procedure EgyebClick(Sender: TObject);
+      procedure TeljesBtnClick(Sender: TObject);
+      procedure EgyebMIClick(Sender: TObject);
       procedure LaphozBtnClick(Sender: TObject);
-      procedure MeretezoeClick(Sender: TObject);
+      procedure MeretezoMIClick(Sender: TObject);
       procedure KilepesClick(Sender: TObject);
       procedure NyomtatClick(Sender: TObject);
       procedure EgysegCBEnter(Sender: TObject);
@@ -118,23 +118,20 @@ interface
 
   var
     MainForm: TMainForm;
-    Bitmap: TBitmap;
     Rajzol, Gyik, Lehet: Boolean;
     Ni, Balszel, Jobbszel, Felsoszel, Alsoszel: Integer;
     OrigoX, OrigoY: Integer;
-    AktivVetulet: Byte=0;
+    AktivVetulet: Byte = 0;
     Szamhossz2: Byte;
     Vet: array[0..220] of string;
     j,l, Winni: Byte;
     SettingsForm: TSettingsForm;
-    Ini, txt: TextFile;
-    SI: array[0..4] of String;
+    Ini, Txt: TextFile;
     Lapx,Lapy: Array[0..6,0..6] of Double;
     Lx,Ly: Double;
     origomas: Boolean=False;
-    Igazigaz: Boolean=False;
     Sajt3: Boolean=False;
-    egyik, masik, StartPoint, EndPoint: TPoint;
+    MoveFrom, MoveTo, StartPoint, EndPoint: TPoint;
     Crop: Boolean=False;
     Elso: Boolean=True;
     CropScrollHorz, CropScrollVert: Integer;
@@ -151,8 +148,6 @@ interface
     Felgomb : Boolean = True; // Az ábrázolt terület félgömb
 
     Vetvalt : Boolean=True;
-    Lapba : Boolean=False;
-    Plusz : String;
     Egyenes : Boolean = False;
     AHeight, AWidth : Integer;
     Egyseg : Byte = 0; // Kiválasztott mértékegység
@@ -178,6 +173,7 @@ implementation
     PrevZoom : Integer = 20; // Be- vagy kizoomolás során az elõzõ nagyítás mértéke
     Scale : Integer; // Térkép méretarányának nevezõje (= méretarányszám)
     PrevScale : Integer; // Méretarány változásakor az elõzõ méretarány
+    ScaleToPage: Boolean = False; // Méretarány laphoz igazítása
 
     VanMeres : Boolean = False;
     AfterClose : Boolean = False;
@@ -191,6 +187,7 @@ implementation
     SBBalra  : Boolean = False;
     SBJobbra : Boolean = False;
 
+    Bitmap: TBitmap;
     OutFile : TextFile;
 
   const
@@ -206,8 +203,8 @@ implementation
     // Form legkisebb lehetséges mérete
     with MinMaxMessage.MinMaxInfo^ do
     begin
-      ptMinTrackSize.x := 672;
-      ptMinTrackSize.y := 300;
+      ptMinTrackSize.X := 672;
+      ptMinTrackSize.Y := 300;
     end;
   end;
 
@@ -241,17 +238,17 @@ implementation
   procedure MeresTorles(Canvas: TCanvas);
   begin
     if VanMeres then begin
-      Canvas.Moveto(EndPoint.X - 7, EndPoint.Y - 7);
-      Canvas.Lineto(EndPoint.X + 7, EndPoint.Y + 7);
-      Canvas.Moveto(EndPoint.X + 7, EndPoint.Y - 7);
-      Canvas.Lineto(EndPoint.X - 7, EndPoint.Y + 7);
+      Canvas.Moveto(EndPoint.X - 5, EndPoint.Y - 5);
+      Canvas.Lineto(EndPoint.X + 5, EndPoint.Y + 5);
+      Canvas.Moveto(EndPoint.X + 5, EndPoint.Y - 5);
+      Canvas.Lineto(EndPoint.X - 5, EndPoint.Y + 5);
 
-      Canvas.Moveto(StartPoint.X - 7, StartPoint.Y - 7);
-      Canvas.Lineto(StartPoint.X + 7, StartPoint.Y + 7);
-      Canvas.Moveto(StartPoint.X + 7, StartPoint.Y - 7);
-      Canvas.Lineto(StartPoint.X - 7, StartPoint.Y + 7);
+      Canvas.Moveto(StartPoint.X - 5, StartPoint.Y - 5);
+      Canvas.Lineto(StartPoint.X + 5, StartPoint.Y + 5);
+      Canvas.Moveto(StartPoint.X + 5, StartPoint.Y - 5);
+      Canvas.Lineto(StartPoint.X - 5, StartPoint.Y + 5);
 
-      Canvas.Moveto(StartPoint.X, StartPoint.y);
+      Canvas.Moveto(StartPoint.X, StartPoint.Y);
       Canvas.Lineto(EndPoint.X, EndPoint.Y);
     end;
     VanMeres := False;
@@ -316,11 +313,9 @@ implementation
 
   procedure TMainForm.FormCreate(Sender: TObject);
   var
-    MemInfo : TMemoryStatus;
     Status : Integer;
     VRes : Integer; // képernyõ függõleges mérete pixelben (pl. 1080)
     VSize : Integer; // fizikai méret mm-ben (pl. 334)
-    Str : String;
     I : Byte;
   begin
     InitVariables;
@@ -370,13 +365,13 @@ implementation
     Screen.Cursors[CR_ZOOMOUT]  := LoadCursor(HInstance, 'ZOOMOUT');
     Screen.Cursors[CR_CROP]     := LoadCursor(HInstance, 'CROP'); // + alakú kurzor
     Screen.Cursors[CR_PENCIL]   := LoadCursor(HInstance, 'PENCIL');
-    Screen.Cursors[CR_ERASER]   := LoadCursor(HInstance, 'ESASER');
-    Screen.Cursors[CR_MOVEFROM] := LoadCursor(HInstance, 'MOVEFROM'); // X alakú kurzor - mozgatás kezdõpontja / távolságmérésnél kezdõ és végpont kijelölése
+    Screen.Cursors[CR_ERASER]   := LoadCursor(HInstance, 'ERASER');
+    Screen.Cursors[CR_MOVEFROM] := LoadCursor(HInstance, 'MOVEFROM'); // X alakú kurzor - mozgatás kezdõpontja
     Screen.Cursors[CR_MOVETO]   := LoadCursor(HInstance, 'MOVETO');
-    Screen.Cursors[CR_MEASURE]  := LoadCursor(HInstance, 'MEASURE');
+    Screen.Cursors[CR_MEASURE]  := LoadCursor(HInstance, 'MEASURE'); // kisebb x alakú kurzor
 
     Bitmap := TBitmap.Create;
-    Bitmap.PixelFormat := pf4bit;
+    Bitmap.PixelFormat := pf32bit;
     Bitmap.Width := Abra.Width;
     Bitmap.Height := Abra.Height;
 
@@ -397,8 +392,8 @@ implementation
     MagasEd.Text := '';
     Lapszeles.Text := '';
     Lapmagas.Text := '';
-    FormPos.x := Left;
-    FormPos.y := Top;
+    FormPos.X := Left;
+    FormPos.Y := Top;
 
     SettingsForm := TSettingsForm.Create(Application);
     SettingsForm.Top := Top + 35 + (ClientHeight - ScrollBox1.Height);
@@ -446,13 +441,13 @@ implementation
       CR_MOVETO:
         begin
           Abra.Cursor := crDefault;
-          masik.X := ValosX(X);
-          masik.Y := ValosY(Y);
+          MoveTo.X := ValosX(X);
+          MoveTo.Y := ValosY(Y);
           origomas := True;
-          OMoveX := OMoveX - masik.x + egyik.x;
-          OMoveY := OMoveY - masik.y + egyik.y;
+          OMoveX := OMoveX - MoveTo.X + MoveFrom.X;
+          OMoveY := OMoveY - MoveTo.Y + MoveFrom.Y;
           KozepreBtn.Enabled := True;
-          FrissitClick(MozgatBtn);
+          FrissitBtnClick(MozgatBtn);
         end;
       CR_MEASURE:
         begin
@@ -468,15 +463,15 @@ implementation
           EndPoint.X := KisXKorr(X);
           EndPoint.Y := KisYKorr(Y);
 
-          Abra.Canvas.Moveto(EndPoint.X - 7,EndPoint.Y - 7);
-          Abra.Canvas.Lineto(EndPoint.X + 7,EndPoint.Y + 7);
-          Abra.Canvas.Moveto(EndPoint.X + 7,EndPoint.Y - 7);
-          Abra.Canvas.Lineto(EndPoint.X - 7,EndPoint.Y + 7);
+          Abra.Canvas.Moveto(EndPoint.X - 5,EndPoint.Y - 5);
+          Abra.Canvas.Lineto(EndPoint.X + 5,EndPoint.Y + 5);
+          Abra.Canvas.Moveto(EndPoint.X + 5,EndPoint.Y - 5);
+          Abra.Canvas.Lineto(EndPoint.X - 5,EndPoint.Y + 5);
         end;
       CR_MOVEFROM:
         begin
-          egyik.x := ValosX(X);
-          egyik.y := ValosY(Y);
+          MoveFrom.X := ValosX(X);
+          MoveFrom.Y := ValosY(Y);
 
           Abra.Cursor := CR_MOVETO;
           Abra.Canvas.Moveto(KisXKorr(X) - 5,KisYKorr(Y) - 5);
@@ -489,11 +484,11 @@ implementation
           ManZoom := True;
           PrevZoom := Zoom;
           StartPoint.X := X;
-          StartPoint.y := Y;
+          StartPoint.Y := Y;
           Zoom := Trunc(Zoom/2);
           Abra.Cursor := crDefault;
           ZoomInProgress := True;
-          FrissitClick(KicsinyitBtn);
+          FrissitBtnClick(KicsinyitBtn);
           Exit;
         end;
       CR_ZOOMIN, CR_CROP:
@@ -501,7 +496,7 @@ implementation
           Rajzol := True;
           PrevZoom := Zoom;
           StartPoint.X := X;
-          StartPoint.y := Y;
+          StartPoint.Y := Y;
           ZoomShape.Top := Y - ScrollBox1.VertScrollBar.Position;
           ZoomShape.Left := X - ScrollBox1.HorzScrollBar.Position;
           ZoomShape.Width := 1;
@@ -512,16 +507,24 @@ implementation
           Abra.Canvas.Pen.Mode := pmCopy;
           SetCursor(Screen.Cursors[CR_PENCIL]);
 
+          AssignFile(DebugFile, 'debug8.log');
+          Rewrite(DebugFile);
+          WriteLn(DebugFile, 'Screen.Cursor: ', Screen.Cursor);
+
           if ssCtrl in Shift then begin
             StartPoint.X := KisXKorr(X);
             StartPoint.Y := KisYKorr(Y);
-            EndPoint.x := KisXKorr(X);
+            EndPoint.X := KisXKorr(X);
             EndPoint.Y := KisYKorr(Y);
             Egyenes := True;
           end else if ssShift in Shift then
             SetCursor(Screen.Cursors[CR_ERASER]);
 
-          Abra.Canvas.Moveto(KisXKorr(x),KisYKorr(y));
+          WriteLn(DebugFile, 'Screen.Cursor: ', Screen.Cursor);
+          WriteLn(DebugFile, 'Abra.Cursor: ', Screen.Cursor);
+          CloseFile(DebugFile);
+
+          Abra.Canvas.Moveto(KisXKorr(X),KisYKorr(Y));
           Rajzol := True;
         end;
       end;
@@ -537,10 +540,10 @@ implementation
       if (Abra.Cursor = CR_ZOOMIN) or (Abra.Cursor = CR_CROP) then begin
         if Rajzol then begin
           ZoomShape.Width := Abs(X - StartPoint.X);
-          ZoomShape.Height := Abs(Y - StartPoint.y);
+          ZoomShape.Height := Abs(Y - StartPoint.Y);
           ZoomShape.Visible := True;
 
-          if Y < StartPoint.y then
+          if Y < StartPoint.Y then
             ZoomShape.Top := Y - ScrollBox1.VertScrollBar.Position;
           if X < StartPoint.X then
             ZoomShape.Left := X - ScrollBox1.HorzScrollBar.Position;
@@ -548,25 +551,25 @@ implementation
           GetCursorPos(Curpos);
           Curpos := ScrollBox1.ScreenToClient(Curpos);
 
-          if Curpos.y < 1 then begin
-            Curpos.y := 1;
+          if Curpos.Y < 1 then begin
+            Curpos.Y := 1;
             Curpos2 := ScrollBox1.ClientToScreen(Curpos);
-            SetCursorPos(Curpos2.x, Curpos2.y);
+            SetCursorPos(Curpos2.X, Curpos2.Y);
             ScrollBox1.VertScrollbar.Position := ScrollBox1.VertScrollbar.Position - 1;
-          end else if Curpos.x < 1 then begin
+          end else if Curpos.X < 1 then begin
             Curpos.X := 1;
             Curpos2 := ScrollBox1.ClientToScreen(Curpos);
-            SetCursorPos(Curpos2.x, Curpos2.y);
+            SetCursorPos(Curpos2.X, Curpos2.Y);
             ScrollBox1.HorzScrollbar.Position := ScrollBox1.HorzScrollbar.Position - 1;
-          end else if Curpos.x > ScrollBox1.Width - 16 then begin
+          end else if Curpos.X > ScrollBox1.Width - 16 then begin
             Curpos.X := ScrollBox1.Width - 16;
             Curpos2 := ScrollBox1.ClientToScreen(Curpos);
-            SetCursorPos(Curpos2.x, Curpos2.y);
+            SetCursorPos(Curpos2.X, Curpos2.Y);
             ScrollBox1.HorzScrollbar.Position := ScrollBox1.HorzScrollbar.Position + 1;
-          end else if Curpos.y>ScrollBox1.Height-16 then begin
-            Curpos.y := ScrollBox1.Height - 16;
+          end else if Curpos.Y>ScrollBox1.Height-16 then begin
+            Curpos.Y := ScrollBox1.Height - 16;
             Curpos2 := ScrollBox1.ClientToScreen(Curpos);
-            SetCursorPos(Curpos2.x, Curpos2.y);
+            SetCursorPos(Curpos2.X, Curpos2.Y);
             ScrollBox1.VertScrollbar.Position := ScrollBox1.VertScrollbar.Position + 1;
           end;
         end;
@@ -574,34 +577,34 @@ implementation
         if Abra.Cursor = CR_MEASURE then begin
           Abra.Canvas.Pen.Mode := pmNotXor;
 
-          Abra.Canvas.Moveto(StartPoint.X,StartPoint.y);
-          Abra.Canvas.Lineto(EndPoint.x,EndPoint.y);
+          Abra.Canvas.Moveto(StartPoint.X,StartPoint.Y);
+          Abra.Canvas.Lineto(EndPoint.X,EndPoint.Y);
 
-          EndPoint.x := KisXKorr(X);
-          EndPoint.y := KisYKorr(y);
+          EndPoint.X := KisXKorr(X);
+          EndPoint.Y := KisYKorr(Y);
 
-          Abra.Canvas.Moveto(StartPoint.X,StartPoint.y);
-          Abra.Canvas.Lineto(EndPoint.x, EndPoint.y);
+          Abra.Canvas.Moveto(StartPoint.X,StartPoint.Y);
+          Abra.Canvas.Lineto(EndPoint.X, EndPoint.Y);
         end else if Rajzol then begin
           if ssShift in Shift then begin
             // Radírozás
-            m.x := KisXKorr(X);
-            m.y := KisYKorr(Y);
+            m.X := KisXKorr(X);
+            m.Y := KisYKorr(Y);
 
             if Abra.Cursor <> CR_ERASER then
               SetCursor(Screen.Cursors[CR_ERASER]);
 
-            Abra.Canvas.Moveto(m.x, m.y);
+            Abra.Canvas.Moveto(m.X, m.Y);
             for o := 0 to 14 do begin
               for i := 0 to 14 do begin
-                if Abra.Canvas.Pixels[m.x + i - 7, m.y + o - 7] = clNavy then
+                if Abra.Canvas.Pixels[m.X + i - 7, m.Y + o - 7] = clNavy then
                   if OptionsForm.LapRajzCB.ItemIndex = 0 then
-                    Abra.Canvas.Pixels[m.x + i - 7, m.y + o - 7] := clWhite
-                  else if (ValosX(m.x + i - 7) < Lx / 2) and (ValosX(m.x + i - 7) > -Lx / 2)
-                  and (ValosY(m.y + o - 7) < Ly / 2) and (ValosY(m.y + o - 7) > -Ly / 2) then
-                    Abra.Canvas.Pixels[m.x+i-7,m.y+o-7] := clLtGray
+                    Abra.Canvas.Pixels[m.X + i - 7, m.Y + o - 7] := clWhite
+                  else if (ValosX(m.X + i - 7) < Lx / 2) and (ValosX(m.X + i - 7) > -Lx / 2)
+                  and (ValosY(m.Y + o - 7) < Ly / 2) and (ValosY(m.Y + o - 7) > -Ly / 2) then
+                    Abra.Canvas.Pixels[m.X+i-7,m.Y+o-7] := clLtGray
                   else
-                    Abra.Canvas.Pixels[m.x+i-7,m.y+o-7] := clWhite;
+                    Abra.Canvas.Pixels[m.X+i-7,m.Y+o-7] := clWhite;
               end
             end
           end else begin
@@ -614,22 +617,22 @@ implementation
             if Egyenes then begin
               Abra.Canvas.Pen.Mode := pmNotXor;
 
-              Abra.Canvas.Moveto(StartPoint.X,StartPoint.y);
-              Abra.Canvas.Lineto(EndPoint.x,EndPoint.y);
+              Abra.Canvas.Moveto(StartPoint.X,StartPoint.Y);
+              Abra.Canvas.Lineto(EndPoint.X,EndPoint.Y);
 
-              Abra.Canvas.Moveto(StartPoint.X,StartPoint.y);
+              Abra.Canvas.Moveto(StartPoint.X,StartPoint.Y);
             end;
-            EndPoint.x := KisXKorr(X);
-            EndPoint.y := KisYKorr(Y);
-            Abra.Canvas.Lineto(KisXKorr(x),KisYKorr(y));
+            EndPoint.X := KisXKorr(X);
+            EndPoint.Y := KisYKorr(Y);
+            Abra.Canvas.Lineto(KisXKorr(X),KisYKorr(Y));
           end;
         end;
       end;
     end;
 
     if not Elso then begin
-      StatusBar2.Panels[0].Text := 'x: '+ IntToStr(Trunc(Convert(INCHUNIT, Egyseg, -lapmovex + ValosX(KisXKorr(X))))) + ' ' + UNITS[Egyseg].Code;
-      StatusBar2.Panels[1].Text := 'y: '+ IntToStr(Trunc(Convert(INCHUNIT, Egyseg, -lapmovey + ValosY(KisYKorr(Y))))) + ' ' + UNITS[Egyseg].Code;
+      StatusBar2.Panels[0].Text := 'X: '+ IntToStr(Trunc(Convert(INCHUNIT, Egyseg, -lapmovex + ValosX(KisXKorr(X))))) + ' ' + UNITS[Egyseg].Code;
+      StatusBar2.Panels[1].Text := 'Y: '+ IntToStr(Trunc(Convert(INCHUNIT, Egyseg, -lapmovey + ValosY(KisYKorr(Y))))) + ' ' + UNITS[Egyseg].Code;
     end;
   end;
 
@@ -640,11 +643,11 @@ implementation
     if Button = mbLeft then begin
       Rajzol := False;
       if Egyenes then begin
-        Abra.Canvas.Moveto(StartPoint.X, StartPoint.y);
-        Abra.Canvas.Lineto(EndPoint.x, EndPoint.y);
+        Abra.Canvas.Moveto(StartPoint.X, StartPoint.Y);
+        Abra.Canvas.Lineto(EndPoint.X, EndPoint.Y);
 
         Abra.Canvas.Pen.Mode := pmCopy;
-        Abra.Canvas.Moveto(StartPoint.X, StartPoint.y);
+        Abra.Canvas.Moveto(StartPoint.X, StartPoint.Y);
         Abra.Canvas.Lineto(X, Y);
       end;
       Egyenes := False;
@@ -679,24 +682,24 @@ implementation
             StartPoint.X := ZoomShape.Left + Trunc(ZoomShape.Width / 2) - Trunc((ScrollBox1.Width - Bitmap.Width) / 2);
 
           if Bitmap.Height > ScrollBox1.Height - 5 then
-            StartPoint.y := ScrollBox1.VertScrollBar.Position + ZoomShape.Top + Trunc(ZoomShape.Height / 2)
+            StartPoint.Y := ScrollBox1.VertScrollBar.Position + ZoomShape.Top + Trunc(ZoomShape.Height / 2)
           else
-            StartPoint.y := ZoomShape.Top + Trunc(ZoomShape.Height / 2) - Trunc((ScrollBox1.Height - Bitmap.Height) / 2);
+            StartPoint.Y := ZoomShape.Top + Trunc(ZoomShape.Height / 2) - Trunc((ScrollBox1.Height - Bitmap.Height) / 2);
 
           if Abra.Cursor = CR_CROP then begin
             Crop := True;
             origomas := False;
-            Teljes.Enabled := True;
+            TeljesMI.Enabled := True;
             TeljesBtn.Enabled := True;
             CropScrollHorz := ScrollBox1.HorzScrollBar.Position;
             CropScrollVert := ScrollBox1.VertScrollBar.Position;
             BalTop  := ValosX(StartPoint.X - ZoomShape.Width div 2) + OMoveX;
             JobbTop := ValosX(StartPoint.X + ZoomShape.Width div 2) + OMoveX;
-            LennTop := ValosY(StartPoint.y + ZoomShape.Height div 2) + OMoveY;
-            FennTop := ValosY(StartPoint.y - ZoomShape.Height div 2) + OMoveY;
+            LennTop := ValosY(StartPoint.Y + ZoomShape.Height div 2) + OMoveY;
+            FennTop := ValosY(StartPoint.Y - ZoomShape.Height div 2) + OMoveY;
           end;
 
-          FrissitClick(Segedshape);
+          FrissitBtnClick(Segedshape);
         end;
 
         Abra.Cursor := crDefault;
@@ -704,26 +707,24 @@ implementation
         ZoomShape.Height := 1;
         ZoomInProgress := False;
         Exit;
-      end else if Abra.Cursor = CR_MOVEFROM then begin
-        Abra.Canvas.Moveto(StartPoint.X, StartPoint.y);
-        Abra.Canvas.Lineto(EndPoint.x, EndPoint.y);
-
-        Abra.Canvas.Moveto(StartPoint.X, StartPoint.y);
+      end else if Abra.Cursor = CR_MEASURE then begin
+        Abra.Canvas.Moveto(StartPoint.X, StartPoint.Y);
+        Abra.Canvas.Lineto(EndPoint.X, EndPoint.Y);
+        Abra.Canvas.Moveto(StartPoint.X, StartPoint.Y);
         Abra.Canvas.Lineto(KisXKorr(X), KisYKorr(Y));
 
-        Abra.Canvas.Moveto(KisXKorr(X) - 7, KisYKorr(Y) - 7);
-        Abra.Canvas.Lineto(KisXKorr(X) + 7, KisYKorr(Y) + 7);
-
-        Abra.Canvas.Moveto(KisXKorr(X) + 7, KisYKorr(Y) - 7);
-        Abra.Canvas.Lineto(KisXKorr(X) - 7, KisYKorr(Y) + 7);
+        Abra.Canvas.Moveto(KisXKorr(X) - 5, KisYKorr(Y) - 5);
+        Abra.Canvas.Lineto(KisXKorr(X) + 5, KisYKorr(Y) + 5);
+        Abra.Canvas.Moveto(KisXKorr(X) + 5, KisYKorr(Y) - 5);
+        Abra.Canvas.Lineto(KisXKorr(X) - 5, KisYKorr(Y) + 5);
 
         StatusBar3.Visible := True;
         StatusBar3.BringToFront;
-        StatusBar3.Panels[0].Text := 'A kijelölt távolság: ' +
-          Format('%-8.6g', [Convert(INCHUNIT, Egyseg, Sqrt(Sqr(ValosX(StartPoint.X) - ValosX(X)) + Sqr(ValosY(StartPoint.Y) - ValosY(Y))))]) + ' ' + UNITS[Egyseg].Code;
+        StatusBar3.Panels[0].Text := Format('A kijelölt távolság: %-8.6g %s',
+          [Convert(INCHUNIT, Egyseg, Sqrt(Sqr(ValosX(StartPoint.X) - ValosX(X)) + Sqr(ValosY(StartPoint.Y) - ValosY(Y)))), UNITS[Egyseg].Code]);
 
-        EndPoint.x := KisXKorr(X);
-        EndPoint.y := KisYKorr(Y);
+        EndPoint.X := KisXKorr(X);
+        EndPoint.Y := KisYKorr(Y);
         VanMeres := True;
       end else if Abra.Cursor in [CR_PENCIL,CR_ERASER] then begin
         Abra.Cursor := crDefault;
@@ -731,14 +732,16 @@ implementation
     end;
   end; // AbraMouseUp
 
-  procedure TMainForm.FrissitClick(Sender: TObject);
+  procedure TMainForm.FrissitBtnClick(Sender: TObject);
   begin
     Frissites(DRAWMODE);
   end;
 
   procedure TMainForm.Frissites(Mode : Byte); // 1 - ábra frissítése, 2 - nyomtatás, 3 - plotter fájlba mentés
-  var Tatu, margox, margoy, szorzo, progpos: Double;
-      MerSurusegFok, ParSurusegFok, SegMerSurusegFok, SegParSurusegFok: Byte;
+  var ReszletFok : Double; // Paralelek és meridiánok kirajzolásakor a lépésköz fokban
+      MerSurusegFok, ParSurusegFok, SegMerSurusegFok, SegParSurusegFok: Byte; // Paralelek és meridánok sûrûsége fokban
+
+      margox, margoy, szorzo, progpos: Double;
       Csalad, prog: byte;
       InvalidValue, Ex, sfh: Boolean;
 
@@ -769,7 +772,12 @@ implementation
       // Vetületi számításokhoz szükséges segédértékek
       n : Double; // Sugárhajlás
       ce, betan, beta1, beta2, beta0: Double;
-      fil1, fil2, fil3: file of Byte;
+
+      // Koordinátákat tartalmazó szövegfájlok
+      fil1, fil2, fil3, fil4: file of Byte;
+
+      // TODO
+      Plusz : String;
 
     procedure ElsoTop;
     begin
@@ -790,51 +798,49 @@ implementation
       if y2 > FennTop then FennTop := y2;
     end;
 
-    procedure Szinado(SzinCB: TCombobox);
-    var Szin: TColor;
+    procedure SetColor(SzinCB: TCombobox);
+    var Color: TColor;
+        DebugFile2: TextFile;
     begin
-      Szin := clBlack;
-      case SzinCB.ItemIndex of
-      0: Szin := clBlack;
-      1: Szin := clBlue;
-      2: Szin := clRed;
-      3: Szin := clGreen;
-      4: Szin := clPurple;
-      5: Szin := clYellow;
-      6: Szin := clAqua;
-      7: Szin := clMaroon;
-      8: Szin := clGray;
-      end;
+      Color := ALLCOLORS[SzinCB.ItemIndex].Color;
+
+      AssignFile(DebugFile2, 'debug7.log');
+      Append(DebugFile2);
+      WriteLn(DebugFile2, 'SzinCB.Name: ', SzinCB.Name);
+      WriteLn(DebugFile2, 'SzinCB.ItemIndex: ', SzinCB.Itemindex);
+      WriteLn(DebugFile2, 'Szin: ', ALLCOLORS[SzinCB.Itemindex].Color);
+      WriteLn(DebugFile2, 'Color: ', Color);
+      CloseFile(DebugFile2);
 
       case Mode of
       PRINTMODE:
-        Printer.Canvas.Pen.Color := Szin;
+        Printer.Canvas.Pen.Color := Color;
       PLTMODE:
         WriteLn(OutFile, 'sp', SzinCB.ItemIndex + 1, ';');
       else
-        Bitmap.Canvas.Pen.Color := Szin
+        Bitmap.Canvas.Pen.Color := Color
       end;
     end;
 
-    procedure Vastagado(Vastagsag : Byte);
+    procedure SetPenWidth(Width : Byte);
     begin
       if Mode = PRINTMODE then
-        Printer.Canvas.Pen.Width := Vastagsag
+        Printer.Canvas.Pen.Width := Width
       else if Mode <> PLTMODE then
-        Bitmap.Canvas.Pen.Width := Vastagsag;
+        Bitmap.Canvas.Pen.Width := Width;
     end;
 
-    procedure Tatuado(GB: Byte);
+    procedure SetReszletFok(Index : Byte);
     begin
-      case GB of
-      0: Tatu := 1/12;
-      1: Tatu := 1/6;
-      2: Tatu := 1/3;
-      3: Tatu := 1/2;
-      4: Tatu := 1;
-      5: Tatu := 2;
-      6: Tatu := 3;
-      7: Tatu := 5;
+      case Index of
+      0: ReszletFok := 1/12;
+      1: ReszletFok := 1/6;
+      2: ReszletFok := 1/3;
+      3: ReszletFok := 1/2;
+      4: ReszletFok := 1;
+      5: ReszletFok := 2;
+      6: ReszletFok := 3;
+      7: ReszletFok := 5;
       end;
     end;
 
@@ -909,27 +915,27 @@ implementation
       END;
     end; // procedure seged
 
-    procedure mozgat(x, y: Integer);
+    procedure mozgat(X, Y: Integer);
     begin
       case Mode of
       PRINTMODE :
-        Printer.Canvas.Moveto(printerrex(x - OMoveX), printerrey(y - OMoveY));
+        Printer.Canvas.Moveto(printerrex(X - OMoveX), printerrey(Y - OMoveY));
       PLTMODE :
-        WriteLn(OutFile, 'pu ', x - OMoveX, ' ', y - OMoveY, ';');
+        WriteLn(OutFile, 'pu ', X - OMoveX, ' ', Y - OMoveY, ';');
       else
-        Bitmap.Canvas.Moveto(keprex(x - KoMoveX),keprey(y - KoMoveY))
+        Bitmap.Canvas.Moveto(keprex(X - KoMoveX),keprey(Y - KoMoveY))
       end;
     end;
 
-    procedure ir(x, y : Integer);
+    procedure ir(X, Y : Integer);
     begin
       case Mode of
       PRINTMODE :
-        Printer.Canvas.Lineto(printerrex(x - OMoveX), printerrey(y - OMoveY));
+        Printer.Canvas.Lineto(printerrex(X - OMoveX), printerrey(Y - OMoveY));
       PLTMODE :
-        WriteLn(OutFile, 'pd ', x - OMoveX, ' ', y - OMoveY, ';');
+        WriteLn(OutFile, 'pd ', X - OMoveX, ' ', Y - OMoveY, ';');
       else
-        Bitmap.Canvas.Lineto(keprex(x - KoMoveX), keprey(y - KoMoveY));
+        Bitmap.Canvas.Lineto(keprex(X - KoMoveX), keprey(Y - KoMoveY));
       end;
     end;
 
@@ -939,15 +945,16 @@ implementation
 
       function Fv(J : Double) : Double;
       begin
+        Result := J;
         case AktivVetulet of
         64 : // Területtartó polikónikus
-          Fv := J - Sin(j) * Sqr(Cos(Fc)) - Lc * Sin(Fc) * Sqr(Sin(Fc));
+          Result := J - Sin(j) * Sqr(Cos(Fc)) - Lc * Sin(Fc) * Sqr(Sin(Fc));
         83 : // Eckert VI.
-          Fv := 0.777969059 * (J + Sin(j)) - 2 * Sin(Fc);
+          Result := 0.777969059 * (J + Sin(j)) - 2 * Sin(Fc);
         85, 89, 90 : // Mollweide-féle, Érdi-Krausz-féle, Goode-féle vetület
-          Fv := 2 * J + Sin(2 * J) - Pi * Sin(Fc);
+          Result := 2 * J + Sin(2 * J) - Pi * Sin(Fc);
         87 : // Eckert IV.
-          Fv := 4 * Sin(J) + Sin(2 * J) + 2 * J - (4 + Pi) * Sin(Fc);
+          Result := 4 * Sin(J) + Sin(2 * J) + 2 * J - (4 + Pi) * Sin(Fc);
         end;
       end;
 
@@ -1841,10 +1848,10 @@ implementation
     procedure paralelkor;
     begin
       q := 0;
-      La := 179.999 + Tatu;
+      La := 179.999 + ReszletFok;
       repeat
         q := q + 1;
-        La := La - Tatu;
+        La := La - ReszletFok;
         if Almost(La, -180) then
           La := -179.999;
         if Ferde then
@@ -1866,10 +1873,10 @@ implementation
     begin
       q := 0;
       u := 0;
-      Reset(txt);
+      Reset(Txt);
 
       repeat
-        readln(txt, Fi, La);
+        readln(Txt, Fi, La);
         if (Fi = 0) and (La = 0) then
           q := 0
         else begin
@@ -1897,9 +1904,9 @@ implementation
               exit;
           end;
         end;
-      until eof(txt);
+      until eof(Txt);
 
-      CloseFile(txt);
+      CloseFile(Txt);
     end;
 
     function SurusegFokVizsgalo(FokEd: TEdit; MaxFok: Byte; var Suruseg: Byte) : Boolean;
@@ -1915,7 +1922,7 @@ implementation
 
       if not Result then begin
         SettingsForm.Visible := True;
-        SettingsForm.PageControl1.ActivePage := SettingsForm.Tartalombox;
+        SettingsForm.PageControl1.ActivePage := SettingsForm.Vetuletbox;
         FokEd.SetFocus;
         InvalidValueMsg;
       end;
@@ -1927,24 +1934,30 @@ implementation
       StatusBar3.Visible := False;
       Abra.Cursor := crDefault;
 
-      AssignFile(fil1,OptionsForm.parttxt.Text);
-      AssignFile(fil2,OptionsForm.hatartxt.Text);
-      AssignFile(fil3,OptionsForm.totxt.Text);
+      AssignFile(fil1,OptionsForm.ParttxtEd.Text);
+      AssignFile(fil2,OptionsForm.HatartxtEd.Text);
+      AssignFile(fil3,OptionsForm.TotxtEd.Text);
+      AssignFile(fil4,OptionsForm.FolyotxtEd.Text);
 
-      if FileExists(OptionsForm.parttxt.text) then begin
+      if FileExists(OptionsForm.ParttxtEd.text) then begin
         Reset(fil1);
         Progpart := Trunc(41 * FileSize(fil1) / 1400000);
         CloseFile(fil1);
       end;
-      if FileExists(OptionsForm.hatartxt.text) then begin
+      if FileExists(OptionsForm.HatartxtEd.text) then begin
         Reset(fil2);
         Proghatar := Trunc(5 * FileSize(fil2) / 170000);
         CloseFile(fil2);
       end;
-      if FileExists(OptionsForm.totxt.text) then begin
+      if FileExists(OptionsForm.TotxtEd.text) then begin
         Reset(fil3);
         Progto := Trunc(4 * FileSize(fil3) / 130000);
         CloseFile(fil3);
+      end;
+      if FileExists(OptionsForm.FolyotxtEd.text) then begin
+        Reset(fil4);
+        Progto := Trunc(4 * FileSize(fil4) / 130000);
+        CloseFile(fil4);
       end;
 
       Kint := False;
@@ -2138,7 +2151,7 @@ implementation
 
       if not Crop then begin
         {határoló vonalak}
-        Tatuado(SettingsForm.ParReszletCB.ItemIndex);
+        SetReszletFok(SettingsForm.ParReszletCB.ItemIndex);
 
         case Csalad of
         0:
@@ -2162,12 +2175,12 @@ implementation
         1:
           begin
             {külsõ paralel}
-            La := 179.999 + Tatu;
+            La := 179.999 + ReszletFok;
             Fc := Arcus(minfi + 0.001);
             Fca := Fc;
 
             repeat
-              La := La-Tatu;
+              La := La-ReszletFok;
               Lc := Arcus(La);
 
               Vetites(x2,y2);
@@ -2180,15 +2193,15 @@ implementation
             until Almost(La, -180);
 
             {határoló meridiánok}
-            Tatuado(SettingsForm.MerReszletCB.ItemIndex);
+            SetReszletFok(SettingsForm.MerReszletCB.ItemIndex);
 
             for i := 0 to 1 do begin
               Lc := -(Pi - 0.00001) + i * 2 * (Pi - 0.00001);
               Lca := Lc;
-              Fi := 89.999 + Tatu;
+              Fi := 89.999 + ReszletFok;
 
               repeat
-                Fi := Fi-Tatu;
+                Fi := Fi-ReszletFok;
                 if Almost(Fi,-90) then
                   Fi := -89.999;
                 Fc := Arcus(Fi);
@@ -2230,7 +2243,7 @@ implementation
 
         3,4,5 :
           begin
-            Tatuado(SettingsForm.MerReszletCB.ItemIndex);
+            SetReszletFok(SettingsForm.MerReszletCB.ItemIndex);
 
             // Oldfield III., Egyszerû hullámvetület, Lambert-féle hullámvetület
             if AktivVetulet in [108,109,110] then begin
@@ -2238,11 +2251,11 @@ implementation
 
               for i := 0 to 1 do begin
                 Fc := (2 * i - 1) * Arcus(90);
-                La := 179.999 + Tatu;
+                La := 179.999 + ReszletFok;
                 Fca := Fc;
 
                 repeat
-                  La := La-Tatu;
+                  La := La-ReszletFok;
                   if Almost(La, -180) then
                     La := -179.999;
                   Lc := Arcus(La);
@@ -2261,11 +2274,11 @@ implementation
 
               for i := 0 to 1 do begin
                 Lc := (2 * i - 1) * Arcus(minfi);
-                Fi := 89.999 + Tatu;
+                Fi := 89.999 + ReszletFok;
                 Lca := Lc;
 
                 repeat
-                  Fi := Fi - Tatu;
+                  Fi := Fi - ReszletFok;
                   if Almost(Fi, -90) then
                     Fi := -89.999;
                   Fc := Arcus(Fi);
@@ -2288,11 +2301,11 @@ implementation
                   Lc := (2 * i - 1) * Arcus(89.999)
                 else
                   Lc := (2 * i - 1) * Arcus(179.999);
-                Fi := -minfi - 0.001 + Tatu;
+                Fi := -minfi - 0.001 + ReszletFok;
                 Lca := Lc;
 
                 repeat
-                  Fi := Fi-Tatu;
+                  Fi := Fi-ReszletFok;
                   if Almost(Fi, -90) then
                     Fi := -89.999;
                   Fc := Arcus(Fi);
@@ -2319,7 +2332,7 @@ implementation
         end;
       end;
 
-      if (OptionsForm.MaigazitChk.Checked and not ManScale) or Igazigaz then begin
+      if (OptionsForm.MaigazitChk.Checked and not ManScale) or ScaleToPage then begin
         if (Lx * (Szazalek / 100) < Minmargomi) or (Ly * (Szazalek / 100) < Minmargomi) then begin
           margox := Lx - 2 * Minmargomi;
           margoy := Ly - 2 * Minmargomi;
@@ -2465,7 +2478,7 @@ implementation
           TRY
             Ex := False;
             Bitmap := TBitmap.Create;
-            Bitmap.PixelFormat := pf4bit;
+            Bitmap.PixelFormat := pf32bit;
             Bitmap.Width := AWidth;
             Bitmap.Height := AHeight;
             Meminfo.dwLength := Sizeof(Meminfo);
@@ -2548,18 +2561,18 @@ implementation
       Ferde := SettingsForm.FerdeBtn.Checked;
 
       // tartalom kirajzolása
-      for j := 4 downto 0 do begin
+      for j := 5 downto 0 do begin
 
         if LayersForm.RetegBox.Items[j] = GetLayerName('SEGED') then begin
 
           {segédfokhálózat}
           if SettingsForm.Segedchk.Checked and SettingsForm.Segedchk.Enabled then begin
-            Vastagado(OptionsForm.SegedVasEd.Value);
+            SetPenWidth(OptionsForm.SegedVasEd.Value);
             Ferde := False;
-            Szinado(SettingsForm.SegSzinCB);
+            SetColor(SettingsForm.SegSzinCB);
 
             {segédhosszúsági körök}
-            Tatuado(SettingsForm.SegMerReszletCB.ItemIndex);
+            SetReszletFok(SettingsForm.SegMerReszletCB.ItemIndex);
             for i := 0 to 2 * Trunc(180 / SegMerSurusegFok) do begin
               q := 0;
               Fi := 89.999;
@@ -2569,7 +2582,7 @@ implementation
               repeat
                 q := q+1;
                 if q > 2 then
-                  Fi := Fi-Tatu;
+                  Fi := Fi-ReszletFok;
                 if Almost(Fi, -90) then
                   Fi := -89.999;
                 Fc := Arcus(Fi);
@@ -2592,7 +2605,7 @@ implementation
             end;
 
             {segédszélességi körök}
-            Tatuado(SettingsForm.SegParReszletCB.ItemIndex);
+            SetReszletFok(SettingsForm.SegParReszletCB.ItemIndex);
             for i := 0 to 180 div SegParSurusegFok do begin
               if ParSurusegFok * (89 div SegParSurusegFok) - i * SegParSurusegFok < minfi then begin
                 mike := i;
@@ -2601,7 +2614,7 @@ implementation
             end;
 
             for i := 0 to mike do begin
-              if i=0 then
+              if i = 0 then
                 Continue;
 
               Fi := SegParSurusegFok * (89 div SegParSurusegFok) - (i - 1) * SegParSurusegFok + 0.001;
@@ -2627,11 +2640,11 @@ implementation
           Rewrite(DebugFile);
           WriteLn(DebugFile, 'MerSurusegFok', MerSurusegFok);
           WriteLn(DebugFile, 'ParSurusegFok', ParSurusegFok);
-          Szinado(SettingsForm.FokSzinCB);
+          SetColor(SettingsForm.FokSzinCB);
 
           if SettingsForm.FokChk.Checked then begin
             {hosszúsági körök}
-            Tatuado(SettingsForm.MerReszletCB.ItemIndex);
+            SetReszletFok(SettingsForm.MerReszletCB.ItemIndex);
             loopint := 2 * Trunc(180 / MerSurusegFok);
             i := 0;
 
@@ -2644,14 +2657,14 @@ implementation
               WriteLn(DebugFile, i, ' ', La);
 
               if Almost(La, 0) then
-                Vastagado(OptionsForm.KezdoVasEd.Value)
+                SetPenWidth(OptionsForm.KezdoVasEd.Value)
               else
-                Vastagado(OptionsForm.HaloVasEd.Value);
+                SetPenWidth(OptionsForm.HaloVasEd.Value);
 
               repeat
                 q := q + 1;
                 if q > 2 then
-                  Fi := Fi - Tatu;
+                  Fi := Fi - ReszletFok;
                 if Almost(Fi, -90) then
                   Fi := -89.995;
 
@@ -2664,6 +2677,7 @@ implementation
 
                 WriteLn(DebugFile, 'Vizsgal1: ', Fi, ' , ', La);
                 WriteLn(DebugFile, 'Vizsgal2: ', Fc, ' , ', Lc);
+                WriteLn(DebugFile, 'Szin: ', Bitmap.Canvas.Pen.Color);
                 Vizsgal;
                 Lca := Lc;
                 Fca := Fc;
@@ -2683,10 +2697,11 @@ implementation
             until i > loopint;
 
             {térítõk,sarkkörök}
-            Tatuado(SettingsForm.ParReszletCB.ItemIndex);
+            SetReszletFok(SettingsForm.ParReszletCB.ItemIndex);
             if SettingsForm.TeritoChk.Checked then begin
+              Bitmap.Canvas.Pen.Style := psDash;
               for i := 1 to 4 do begin
-                Vastagado(OptionsForm.TeritoVasEd.Value);
+                SetPenWidth(OptionsForm.TeritoVasEd.Value);
                 case i of
                 1: Fi := 66.5;
                 2: Fi := 23.5;
@@ -2695,6 +2710,7 @@ implementation
                 end;
                 paralelkor;
               end;
+              Bitmap.Canvas.Pen.Style := psSolid;
             end;
             CloseFile(DebugFile);
 
@@ -2711,9 +2727,9 @@ implementation
 
               Fi := ParSurusegFok * (89 div ParSurusegFok) - (i - 1) * ParSurusegFok + 0.01;
               if Almost(Fi, 0) then
-                Vastagado(OptionsForm.EgyenlitoVasEd.Value)
+                SetPenWidth(OptionsForm.EgyenlitoVasEd.Value)
               else
-                Vastagado(OptionsForm.HaloVasEd.Value);
+                SetPenWidth(OptionsForm.HaloVasEd.Value);
 
               paralelkor;
               Progpos := progpos + 100 / Prog * 7 / (mike + 1);
@@ -2733,16 +2749,16 @@ implementation
 
           // határoló vonalak - ezeket a fokhálózat megjelenítésétõl függetlenül kirajzoljuk
           Ferde := True;
-          Vastagado(OptionsForm.HaloVasEd.Value);
-          Tatuado(SettingsForm.ParReszletCB.ItemIndex);
+          SetPenWidth(OptionsForm.HaloVasEd.Value);
+          SetReszletFok(SettingsForm.ParReszletCB.ItemIndex);
 
           case Csalad of
           0 : begin
             q := 0;
-            La := 179.999+Tatu;
+            La := 179.999+ReszletFok;
             Fc := Arcus(minfi+0.001);
             Fca := Fc;
-            repeat La := La-Tatu;
+            repeat La := La-ReszletFok;
                    if Almost(La, -180) then La := -179.999;
                    Lc := Arcus(La);
                    q := q+1;
@@ -2754,11 +2770,11 @@ implementation
           1 : begin
             {külsõ paralel}
             q := 0;
-            La := 179.999 + Tatu;
+            La := 179.999 + ReszletFok;
             Fc := Arcus(minfi + 0.001);
             Fca := Fc;
             repeat
-              La := La - Tatu;
+              La := La - ReszletFok;
               if Almost(La, -180) then
                 La := -179.999;
 
@@ -2769,14 +2785,14 @@ implementation
             until Almost(La, -180);
 
             {határoló meridiánok}
-            Tatuado(SettingsForm.MerReszletCB.ItemIndex);
+            SetReszletFok(SettingsForm.MerReszletCB.ItemIndex);
             for i := 0 to 1 do begin
               q := 0;
               Lc := -(Pi - 0.00001) + i * 2 * (Pi - 0.00001);
               Lca := Lc;
-              Fi := 89.999 + Tatu;
+              Fi := 89.999 + ReszletFok;
               repeat
-                Fi := Fi - Tatu;
+                Fi := Fi - ReszletFok;
                 if Almost(Fi, -90) then
                   Fi := -89.999;
                 Fc := Arcus(Fi);
@@ -2787,14 +2803,14 @@ implementation
             end;
 
             {pólusvonal}
-            Tatuado(SettingsForm.ParReszletCB.ItemIndex);
+            SetReszletFok(SettingsForm.ParReszletCB.ItemIndex);
             if AktivVetulet in [20,21,24,25] then begin
               q := 0;
               Fc := Arcus(89.999);
-              La := 179.999 + Tatu;
+              La := 179.999 + ReszletFok;
               Fca := Fc;
               repeat
-                La := La - Tatu;
+                La := La - ReszletFok;
                 if Almost(La, -180) then
                   La := -179.999;
 
@@ -2810,14 +2826,14 @@ implementation
             begin
               if (Csalad in [2,4,5]) or (AktivVetulet=69) and not (AktivVetulet in [94,95,98,181]) then begin
                 {határoló szélességek}
-                Tatuado(SettingsForm.ParReszletCB.ItemIndex);
+                SetReszletFok(SettingsForm.ParReszletCB.ItemIndex);
                 for i := 0 to 1 do begin
                   q := 0;
                   Fc := ( 2 * i - 1) * Arcus(minfi + 0.001);
-                  La := 179.999 + Tatu;
+                  La := 179.999 + ReszletFok;
                   Fca := Fc;
                   repeat
-                    La := La - Tatu;
+                    La := La - ReszletFok;
                     if Almost(La, -180) then
                       La := -179.999;
 
@@ -2830,7 +2846,7 @@ implementation
               end;
 
               {határoló meridiánok}
-              Tatuado(SettingsForm.MerReszletCB.ItemIndex);
+              SetReszletFok(SettingsForm.MerReszletCB.ItemIndex);
               for i := 0 to 1 do begin
                 q := 0;
 
@@ -2840,11 +2856,11 @@ implementation
                   Lc := (2 * i - 1) * Arcus(89.999)
                 else
                   Lc := (2 * i - 1) * Arcus(179.999);
-                Fi := 89.999 + Tatu;
+                Fi := 89.999 + ReszletFok;
                 Lca := Lc;
 
                 repeat
-                  Fi := Fi - Tatu;
+                  Fi := Fi - ReszletFok;
                   if Almost(Fi, -90) then
                     Fi := -89.999;
                   Fc := Arcus(Fi);
@@ -2858,12 +2874,12 @@ implementation
 
           // Armadillo
           if ((AktivVetulet = 107) and (fin <> 0)) then begin
-            Tatuado(SettingsForm.ParReszletCB.ItemIndex);
+            SetReszletFok(SettingsForm.ParReszletCB.ItemIndex);
             q := 0;
-            La := 179.999 + Tatu;
+            La := 179.999 + ReszletFok;
 
             repeat
-              La := La - Tatu;
+              La := La - ReszletFok;
               Lc := Arcus(La);
               Fc := -Arctan(Cos(Lc / 2) / Tan(betan));
               q := q + 1;
@@ -2892,14 +2908,14 @@ implementation
               end;
 
               if i in [1,2] then
-                Fi := 89.999 + Tatu
+                Fi := 89.999 + ReszletFok
               else
                 Fi := 0;
 
               Lca := Lc;
 
               repeat
-                Fi := Fi - Tatu;
+                Fi := Fi - ReszletFok;
                 if Almost(Fi, 0) then
                   Fi := 0;
                 if Almost(Fi, -90) then
@@ -2933,14 +2949,14 @@ implementation
         {tengerpartok kirajzolása}
         if LayersForm.RetegBox.Items[j] = GetLayerName('PART') then begin
           if SettingsForm.PartChk.Checked then begin
-            Vastagado(OptionsForm.PartVasEd.Value);
-            Szinado(SettingsForm.PartSzinCB);
+            SetPenWidth(OptionsForm.PartVasEd.Value);
+            SetColor(SettingsForm.PartSzinCB);
 
-            AssignFile(txt,OptionsForm.parttxt.Text);
-            if FileExists(OptionsForm.parttxt.Text) then
+            AssignFile(Txt,OptionsForm.ParttxtEd.Text);
+            if FileExists(OptionsForm.ParttxtEd.Text) then
               Tartalomrajzolo
             else
-              MessageDlg(OptionsForm.parttxt.Text+' nem található', mtError, [mbOK], 0);
+              MessageDlg(OptionsForm.ParttxtEd.Text+' nem található', mtError, [mbOK], 0);
 
             if Megse then begin
               ProgressForm.Close;
@@ -2952,14 +2968,14 @@ implementation
         {országhatárok kirajzolása}
         if LayersForm.RetegBox.Items[j] = GetLayerName('HATAR') then begin
           if SettingsForm.HatarChk.Checked then begin
-            Vastagado(OptionsForm.HatarVasEd.Value);
-            Szinado(SettingsForm.HatarSzinCB);
+            SetPenWidth(OptionsForm.HatarVasEd.Value);
+            SetColor(SettingsForm.HatarSzinCB);
 
-            AssignFile(txt,OptionsForm.hatartxt.Text);
-            if FileExists(OptionsForm.hatartxt.Text) then
+            AssignFile(Txt,OptionsForm.HatartxtEd.Text);
+            if FileExists(OptionsForm.HatartxtEd.Text) then
               Tartalomrajzolo
             else
-              MessageDlg(OptionsForm.hatartxt.Text+' nem található', mtError, [mbOK], 0);
+              MessageDlg(OptionsForm.HatartxtEd.Text + ' nem található', mtError, [mbOK], 0);
 
             if Megse then begin
               ProgressForm.Close;
@@ -2971,14 +2987,33 @@ implementation
         {tavak kirajzolása}
         if LayersForm.RetegBox.Items[j] = GetLayerName('TO') then begin
           if SettingsForm.Tochk.Checked then begin
-            Vastagado(OptionsForm.ToVasEd.Value);
-            Szinado(SettingsForm.ToSzinCB);
+            SetPenWidth(OptionsForm.ToVasEd.Value);
+            SetColor(SettingsForm.ToSzinCB);
 
-            AssignFile(txt,OptionsForm.totxt.Text);
-            if FileExists(OptionsForm.totxt.Text) then
+            AssignFile(Txt,OptionsForm.TotxtEd.Text);
+            if FileExists(OptionsForm.TotxtEd.Text) then
               Tartalomrajzolo
             else
-              MessageDlg(OptionsForm.totxt.Text+' nem található', mtError, [mbOK], 0);
+              MessageDlg(OptionsForm.TotxtEd.Text + ' nem található', mtError, [mbOK], 0);
+
+            if Megse then begin
+              ProgressForm.Close;
+              Exit;
+            end;
+          end;
+        end;
+
+        {folyók kirajzolása}
+        if LayersForm.RetegBox.Items[j] = GetLayerName('FOLYO') then begin
+          if SettingsForm.FolyoChk.Checked then begin
+            SetPenWidth(OptionsForm.FolyoVasEd.Value);
+            SetColor(SettingsForm.FolyoSzinCB);
+
+            AssignFile(Txt,OptionsForm.FolyotxtEd.Text);
+            if FileExists(OptionsForm.FolyotxtEd.Text) then
+              Tartalomrajzolo
+            else
+              MessageDlg(OptionsForm.FolyotxtEd.Text + ' nem található', mtError, [mbOK], 0);
 
             if Megse then begin
               ProgressForm.Close;
@@ -2998,12 +3033,12 @@ implementation
 
       if NeedManScale then begin
         ScrollBox1.HorzScrollBar.Position := Trunc(Abra.Width / SBHelyx * StartPoint.X - ScrollBox1.Width / 2);
-        ScrollBox1.VertScrollBar.Position := Trunc(Abra.Height / SBHelyy * StartPoint.y - ScrollBox1.Height / 2);
+        ScrollBox1.VertScrollBar.Position := Trunc(Abra.Height / SBHelyy * StartPoint.Y - ScrollBox1.Height / 2);
       end;
 
       if ZoomInProgress or NeedManZoom then begin
         ScrollBox1.HorzScrollBar.Position := Trunc(Zoom / PrevZoom * StartPoint.X - ScrollBox1.Width / 2);
-        ScrollBox1.VertScrollBar.Position := Trunc(Zoom / PrevZoom * StartPoint.y - ScrollBox1.Height / 2);
+        ScrollBox1.VertScrollBar.Position := Trunc(Zoom / PrevZoom * StartPoint.Y - ScrollBox1.Height / 2);
       end;
 
       if (not ZoomInProgress and not NeedManZoom and not NeedManScale and not Vetvalt) or Sajt3 then begin
@@ -3054,8 +3089,12 @@ implementation
       else
         StatusBar1.Panels[3].Text := ' ';
     EXCEPT
-      ProgressForm.Close;
-      MessageDlg('Az ábra megrajzolása nem sikerült.', mtError, [mbOK], 0);
+    on E : Exception do
+      begin
+        MessageDlg('Exception class name = '+E.ClassName + 'Exception message = '+E.Message, mtError, [mbOK], 0);
+        ProgressForm.Close;
+        MessageDlg('Az ábra megrajzolása nem sikerült.', mtError, [mbOK], 0);
+      end;
     END;
   end; // procedure Frissites
 
@@ -3065,7 +3104,7 @@ implementation
     ManZoom := True;
     NeedManZoom := True;
     StartPoint.X := ScrollBox1.HorzScrollBar.Position + Trunc(ScrollBox1.Width / 2);
-    StartPoint.y := ScrollBox1.VertScrollBar.Position + Trunc(ScrollBox1.Height / 2);
+    StartPoint.Y := ScrollBox1.VertScrollBar.Position + Trunc(ScrollBox1.Height / 2);
 
     if NagyitasCB.ItemIndex = 7 then begin
       ManZoom := False;
@@ -3074,7 +3113,7 @@ implementation
     end;
   end;
 
-  procedure TMainForm.MentesClick(Sender: TObject);
+  procedure TMainForm.MentBtnClick(Sender: TObject);
   var
     JpgImg : TJPegImage;
   begin
@@ -3123,14 +3162,14 @@ implementation
     AboutForm.ShowModal;
   end;
 
-  procedure TMainForm.BeallitClick(Sender: TObject);
+  procedure TMainForm.BeallitasMIClick(Sender: TObject);
   begin
     SettingsForm.Visible := True;
-    SettingsForm.OpenBtnClick(Beallit);
-    SettingsForm.FormActivate(Beallit);
+    SettingsForm.OpenBtnClick(BeallitasMI);
+    SettingsForm.FormActivate(BeallitasMI);
   end;
 
-  procedure TMainForm.PapirmenuClick(Sender: TObject);
+  procedure TMainForm.PapirMIClick(Sender: TObject);
   begin
     PageForm.Showmodal;
   end;
@@ -3156,11 +3195,11 @@ implementation
     end;
   end;
 
-  procedure TMainForm.EszkoztareClick(Sender: TObject);
+  procedure TMainForm.EszkoztarMIClick(Sender: TObject);
   begin
-    Eszkoztare.Checked := not Eszkoztare.Checked;
+    EszkoztarMI.Checked := not EszkoztarMI.Checked;
     Eszkoztar.Visible := not Eszkoztar.Visible;
-    if not Eszkoztare.Checked then begin
+    if not EszkoztarMI.Checked then begin
       Meretezo.Top := Meretezo.Top - 28;
       ScrollBox1.Top := ScrollBox1.Top - 28;
       ScrollBox1.Height := ScrollBox1.Height + 28;
@@ -3192,7 +3231,7 @@ implementation
       ManScale := True;
       NeedManScale := True;
       StartPoint.X := ScrollBox1.HorzScrollBar.Position + Trunc(ScrollBox1.Width/2);
-      StartPoint.y := ScrollBox1.VertScrollBar.Position + Trunc(ScrollBox1.Height/2);
+      StartPoint.Y := ScrollBox1.VertScrollBar.Position + Trunc(ScrollBox1.Height/2);
       SBHelyx := Abra.Width;
       SBHelyy := Abra.Height;
     end;
@@ -3227,9 +3266,10 @@ implementation
 
       if NeedSaveIni then begin
         if MessageDlg('Elmenti a beállításokat?', mtConfirmation,[mbYes, mbNo], 0) = idYes then begin
-          IniFile.WriteString ('Adatbazis', 'Partok', OptionsForm.parttxt.Text);
-          IniFile.WriteString ('Adatbazis', 'Hatarok', OptionsForm.hatartxt.Text);
-          IniFile.WriteString ('Adatbazis', 'Tavak', OptionsForm.totxt.Text);
+          IniFile.WriteString ('Adatbazis', 'Partok', OptionsForm.ParttxtEd.Text);
+          IniFile.WriteString ('Adatbazis', 'Hatarok', OptionsForm.HatartxtEd.Text);
+          IniFile.WriteString ('Adatbazis', 'Tavak', OptionsForm.TotxtEd.Text);
+          IniFile.WriteString ('Adatbazis', 'Folyok', OptionsForm.FolyotxtEd.Text);
           IniFile.WriteBool   ('Meretezes', 'Abraigazitas', OptionsForm.AbraigazitChk.Checked);
           IniFile.WriteBool   ('Meretezes', 'Maigazitas', OptionsForm.MaigazitChk.Checked);
           IniFile.WriteBool   ('Meretezes', 'Autozoom', OptionsForm.AutozoomChk.Checked);
@@ -3245,6 +3285,7 @@ implementation
           IniFile.WriteInteger('Megjelenites', 'Partok', OptionsForm.PartVasEd.Value);
           IniFile.WriteInteger('Megjelenites', 'Hatarok', OptionsForm.HatarVasEd.Value);
           IniFile.WriteInteger('Megjelenites', 'Tavak', OptionsForm.ToVasEd.Value);
+          IniFile.WriteInteger('Megjelenites', 'Folyok', OptionsForm.FolyoVasEd.Value);
           if PageForm.PapirCB.ItemIndex < 6 then
             IniFile.WriteInteger('Papir', 'Meret', PageForm.PapirCB.ItemIndex);
           IniFile.WriteBool   ('Papir', 'Tajolas', PageForm.AlloBtn.Checked);
@@ -3267,15 +3308,15 @@ implementation
      Meretezo.Width := Width - 8;
      ScrollBox1.Width := Width - 6;
 
-     if Eszkoztare.Checked then
+     if EszkoztarMI.Checked then
        ScrollBox1.Height := ClientHeight - 25
      else
        ScrollBox1.Height := ClientHeight;
 
-     if Meretezoe.Checked then
+     if MeretezoMI.Checked then
        ScrollBox1.Height := ScrollBox1.Height - 25;
 
-     if Statuszsore.Checked then
+     if StatuszsorMI.Checked then
        ScrollBox1.Height := ScrollBox1.Height - 25;
 
      StatusBar2.Top := StatusBar1.Top;
@@ -3307,15 +3348,15 @@ implementation
     StatusBar3.Visible := False;
   end;
 
-  procedure TMainForm.TeljesClick(Sender: TObject);
+  procedure TMainForm.TeljesBtnClick(Sender: TObject);
   begin
     Crop := False;
-    Teljes.Enabled := False;
+    TeljesMI.Enabled := False;
     TeljesBtn.Enabled := False;
-    FrissitClick(Teljes);
+    FrissitBtnClick(TeljesMI);
   end;
 
-  procedure TMainForm.EgyebClick(Sender: TObject);
+  procedure TMainForm.EgyebMIClick(Sender: TObject);
   begin
     OptionsForm.Showmodal;
   end;
@@ -3323,45 +3364,37 @@ implementation
   procedure TMainForm.LaphozBtnClick(Sender: TObject);
   begin
     ManScale := False;
-    Igazigaz := True;
-    FrissitClick(LaphozBtn);
+    ScaleToPage := True;
+    FrissitBtnClick(LaphozBtn);
     LaphozBtn.Enabled := False;
-    Igazigaz := False;
+    ScaleToPage := False;
   end;
 
-  procedure TMainForm.StatuszsoreClick(Sender: TObject);
+  procedure TMainForm.StatuszsorMIClick(Sender: TObject);
   begin
-    Statuszsore.Checked := not Statuszsore.Checked;
-    if Statuszsore.Checked=False
-     then
-      begin
-       StatusBar2.Visible := False;
-       StatusBar1.Visible := False;
-       ScrollBox1.Height := ScrollBox1.Height+25;
-      end
-     else
-      begin
-       StatusBar2.Visible := True;
-       StatusBar1.Visible := True;
-       ScrollBox1.Height := ScrollBox1.Height-25;
-      end;
+    StatuszsorMI.Checked := not StatuszsorMI.Checked;
+    if not StatuszsorMI.Checked then begin
+      StatusBar2.Visible := False;
+      StatusBar1.Visible := False;
+      ScrollBox1.Height := ScrollBox1.Height + 25;
+    end else begin
+      StatusBar2.Visible := True;
+      StatusBar1.Visible := True;
+      ScrollBox1.Height := ScrollBox1.Height - 25;
+    end;
   end;
 
-  procedure TMainForm.MeretezoeClick(Sender: TObject);
+  procedure TMainForm.MeretezoMIClick(Sender: TObject);
   begin
-    Meretezoe.Checked := not Meretezoe.Checked;
+    MeretezoMI.Checked := not MeretezoMI.Checked;
     Meretezo.Visible := not Meretezo.Visible;
-    if Meretezoe.Checked=False
-    then
-       begin
-       ScrollBox1.Top := ScrollBox1.Top-28;
-       ScrollBox1.Height := ScrollBox1.Height+28;
-     end
-    else
-     begin
-       ScrollBox1.Height := ScrollBox1.Height-28;
-       ScrollBox1.Top := ScrollBox1.Top+28;
-     end;
+    if not MeretezoMI.Checked then begin
+      ScrollBox1.Top := ScrollBox1.Top - 28;
+      ScrollBox1.Height := ScrollBox1.Height + 28;
+    end else begin
+      ScrollBox1.Height := ScrollBox1.Height - 28;
+      ScrollBox1.Top := ScrollBox1.Top + 28;
+    end;
   end;
 
   procedure TMainForm.KilepesClick(Sender: TObject);
@@ -3431,13 +3464,18 @@ implementation
     MeresTorles(Abra.Canvas);
     StatusBar3.Visible := False;
     Abra.Cursor := CR_MOVEFROM;
+
+    AssignFile(DebugFile, 'debug.log');
+    Rewrite(DebugFile);
+    WriteLn(DebugFile, 'Abra.Cursor', Abra.Cursor);
+    CloseFile(DebugFile);
   end;
 
   procedure TMainForm.KozepreBtnClick(Sender: TObject);
   begin
     origomas := False;
     KozepreBtn.Enabled := False;
-    FrissitClick(KozepreBtn);
+    FrissitBtnClick(KozepreBtn);
   end;
 
   procedure TMainForm.TavolsagBtnClick(Sender: TObject);
@@ -3450,19 +3488,19 @@ implementation
     NewPos : TPoint;
   begin
     // A Beállítások form kövesse a fõképernyõt
-    NewPos.x := Left;
-    NewPos.y := Top;
+    NewPos.X := Left;
+    NewPos.Y := Top;
 
-    SettingsForm.Top := SettingsForm.Top + NewPos.y - FormPos.y;
-    SettingsForm.Left := SettingsForm.Left + NewPos.x - FormPos.x;
+    SettingsForm.Top := SettingsForm.Top + NewPos.Y - FormPos.Y;
+    SettingsForm.Left := SettingsForm.Left + NewPos.X - FormPos.X;
 
     if SettingsForm.Top < 2 then
       SettingsForm.Top := 2;
     if SettingsForm.Left < 2 then
       SettingsForm.Left := 2;
 
-    FormPos.x := Left;
-    FormPos.y := Top;
+    FormPos.X := Left;
+    FormPos.Y := Top;
 
     // Scrollbar mozgatása
     if ActiveControl = Edit1 then begin

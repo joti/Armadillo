@@ -36,12 +36,10 @@ implementation
     89: // Érdi-Krausz-féle
       begin
         FinLab.Caption := 'A két vetület közötti határoló szélesség:';
-        FinLab.Left := 42;
       end;
     102: // Winkel-féle
       begin
         FinLab.Caption := 'A hengervetület hossztartó paraleljeinek szélessége:';
-        FinLab.Left := 8;
       end;
     end;
   end;

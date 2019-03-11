@@ -3,7 +3,7 @@ unit General;
 interface
 
   uses
-    Forms, Dialogs, IniFiles, SysUtils;
+    Forms, Dialogs, IniFiles, SysUtils, Graphics, Windows;
 
   function Arcus(Degree : Double) : Double;
   function Sgn(Num : Double) : Integer;
@@ -20,6 +20,11 @@ interface
 
   type TCodeName = record
        Code : ShortString;
+       Name : String;
+       end;
+
+  type TColorName = record
+       Color : TColor;
        Name : String;
        end;
 
@@ -58,6 +63,32 @@ interface
     (Code: 'cm'; Name: 'centiméter'),
     (Code: 'in'; Name: 'inch'),
     (Code: 'mi'; Name: 'ezredinch') );
+
+  // Választható színek
+  // A lap megjelenítés clLtGray színnel történik, ezért nem kínáljuk fel
+  // A rajzolás pedig jelenleg clNavy színt használ, ezért ez sem választható
+  // Egyéni szín megadása: $00BBGGRR
+  const ALLCOLORS : array[0..19] of TColorName = (
+    (Color: clBlack; Name: 'Fekete'),
+    (Color: clAqua; Name: 'Cián'),
+    (Color: clSkyBlue; Name: 'Világoskék'),
+    (Color: clBlue; Name: 'Sötétkék'),
+    (Color: clTeal; Name: 'Türkiz'),
+    (Color: clGreen; Name: 'Sötétzöld'),
+    (Color: TColor($0024AA00); Name: 'Zöld'),
+    (Color: clMoneyGreen; Name: 'Világoszöld'),
+    (Color: clOlive; Name: 'Olíva'),
+    (Color: clYellow; Name: 'Sárga'),
+    (Color: TColor($0000A5FF); Name: 'Narancssárga'),
+    (Color: clRed; Name: 'Piros'),
+    (Color: TColor($00C1B7EE); Name: 'Rózsaszín'),
+    (Color: clFuchsia; Name: 'Magenta'),
+    (Color: TColor($00D45B8B); Name: 'Levendula'),
+    (Color: clPurple; Name: 'Lila'),
+    (Color: TColor($003F1DBA); Name: 'Bordó'),
+    (Color: clMaroon; Name: 'Barna'),
+    (Color: clDkGray; Name: 'Sötétszürke'),
+    (Color: clMedGray; Name: 'Világosszürke'));
 
   var
     NeedComma : Boolean; // Tizedestörtekben a pontok vesszõvé alakítandók

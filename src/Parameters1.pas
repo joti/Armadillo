@@ -153,7 +153,6 @@ implementation
         Alapmeret;
         LegkulsoLab.Visible := True;
         LegkulsoLab.Caption := 'Legkülsõ kirajzolt paralelkör pólustávolsága:';
-        LegkulsoLab.Left := 7;
         FokkEd.Visible := True;
         FokkLab.Visible := True;
         FokkEd.Text := IntToStr(fik);
@@ -164,7 +163,6 @@ implementation
         Alapmeret;
         HossztartLab.Visible := True;
         HossztartLab.Caption := 'Hossztartó paralelkör pólustávolsága:';
-        HossztartLab.Left := 25;
         FoknEd.Visible := True;
         FoknLab.Visible := True;
         FoknEd.Text := IntToStr(fin);
@@ -174,7 +172,6 @@ implementation
         Alapmeret;
         HossztartLab.Visible := True;
         HossztartLab.Caption := 'Hossztartó paralelkörök pólustávolsága:';
-        HossztartLab.Left := 20;
         Fok1Ed.Visible := True;
         Fok2Ed.Visible := True;
         Fok1Lab.Visible := True;
@@ -189,8 +186,6 @@ implementation
         HossztartLab.Visible := True;
         HossztartLab.Caption := 'Hossztartó paralelkör pólustávolsága:';
         LegkulsoLab.Caption := 'Legkülsõ kirajzolt paralelkör pólustávolsága:';
-        HossztartLab.Left := 25;
-        LegkulsoLab.Left := 7;
         FoknEd.Visible := True;
         FokkEd.Visible := True;
         FoknLab.Visible := True;
@@ -205,8 +200,6 @@ implementation
         HossztartLab.Visible := True;
         HossztartLab.Caption := 'Hossztartó paralelkörök pólustávolsága:';
         LegkulsoLab.Caption := 'Legkülsõ kirajzolt paralelkör pólustávolsága:';
-        HossztartLab.Left := 20;
-        LegkulsoLab.Left := 7;
         Fok1Ed.Visible := True;
         Fok2Ed.Visible := True;
         FokkEd.Visible := True;
@@ -227,8 +220,6 @@ implementation
         IranyLab.Visible := True;
         HossztartLab.Caption := 'Hossztartó paralelkörök pólustávolsága:';
         LegkulsoLab.Caption := 'Legkülsõ kirajzolt paralelkör pólustávolsága:';
-        HossztartLab.Left := 20;
-        LegkulsoLab.Left := 7;
         Fok1Ed.Visible := True;
         Fok2Ed.Visible := True;
         FokkEd.Visible := True;
@@ -250,7 +241,6 @@ implementation
         Alapmeret;
         HossztartLab.Visible := True;
         HossztartLab.Caption := 'Hossztartó paralelkörök szélessége:';
-        HossztartLab.Left := 33;
         FoknEd.Visible := True;
         FoknLab.Visible := True;
         PMLab.Visible := True;
@@ -261,7 +251,6 @@ implementation
         Alapmeret;
         LegkulsoLab.Visible := True;
         LegkulsoLab.Caption := 'Legkülsõ kirajzolt paralelkörök szélessége:';
-        LegkulsoLab.Left := 13;
         FokkEd.Visible := True;
         FokkLab.Visible := True;
         PMLab2.Visible := True;
@@ -274,8 +263,6 @@ implementation
         HossztartLab.Visible := True;
         HossztartLab.Caption := 'Hossztartó paralelkörök szélessége:';
         LegkulsoLab.Caption := 'Legkülsõ kirajzolt paralelkörök szélessége:';
-        HossztartLab.Left := 33;
-        LegkulsoLab.Left := 13;
         FoknEd.Visible := True;
         FokkEd.Visible := True;
         FoknLab.Visible := True;
@@ -295,8 +282,6 @@ implementation
         IranyLab.Visible := True;
         HossztartLab.Caption := 'Hossztartó paralelkörök szélessége:';
         LegkulsoLab.Caption := 'Legkülsõ kirajzolt paralelkörök szélessége:';
-        HossztartLab.Left := 33;
-        LegkulsoLab.Left := 13;
         FoknEd.Visible := True;
         FokkEd.Visible := True;
         FokaEd.Left := 30;
@@ -317,7 +302,6 @@ implementation
         Alapmeret;
         HossztartLab.Visible := True;
         HossztartLab.Caption := 'Normálparalelkör szélessége:';
-        HossztartLab.Left := 55;
         FoknEd.Visible := True;
         FoknLab.Visible := True;
         FoknEd.Text := IntToStr(fin);
@@ -327,7 +311,6 @@ implementation
         Alapmeret;
         HossztartLab.Visible := True;
         HossztartLab.Caption := 'A fokhálózat szétnyílását jellemzõ konstans:';
-        HossztartLab.Left := 10;
         FokaEd.Left := 112;
         FokaEd.Top := 34;
         FokaEd.Visible := True;
@@ -338,7 +321,6 @@ implementation
         Alapmeret;
         LegkulsoLab.Visible := True;
         LegkulsoLab.Caption := 'Legkülsõ kirajzolt meridiánok hosszúsága:';
-        LegkulsoLab.Left := 17;
         FokkEd.Visible := True;
         FokkLab.Visible := True;
         PMLab2.Visible := True;
@@ -351,8 +333,6 @@ implementation
         HossztartLab.Visible := True;
         HossztartLab.Caption := 'A fokhálózat szétnyílását jellemzõ konstans:';
         LegkulsoLab.Caption := 'Egyenesként jelentkezõ paralel szélessége:';
-        HossztartLab.Left := 10;
-        LegkulsoLab.Left := 10;
         FokaEd.Left := 112;
         FokaEd.Top := 34;
         FokaEd.Visible := True;
@@ -367,7 +347,6 @@ implementation
       Alapmeret;
       HossztartLab.Visible := True;
       HossztartLab.Caption := 'A tóruszra való rátekintés szöge:';
-      HossztartLab.Left := 53;
       FoknEd.Visible := True;
       FoknLab.Visible := True;
       FoknEd.Text := IntToStr(fin);

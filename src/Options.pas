@@ -10,51 +10,51 @@ interface
       PageControl1: TPageControl;
       TabSheet1: TTabSheet;
       TabSheet2: TTabSheet;
-    MaigazitChk: TCheckBox;
-    AbraigazitChk: TCheckBox;
+      MaigazitChk: TCheckBox;
+      AbraigazitChk: TCheckBox;
       OKBtn: TButton;
-    AutozoomChk: TCheckBox;
-    KozepigazitChk: TCheckBox;
-    MargoLab: TLabel;
-    LapszazalekLab: TLabel;
+      AutozoomChk: TCheckBox;
+      KozepigazitChk: TCheckBox;
+      MargoLab: TLabel;
+      LapszazalekLab: TLabel;
       SzazalekEd: TEdit;
-    SzazalekLab: TLabel;
-    LegalabbLab: TLabel;
+      SzazalekLab: TLabel;
+      LegalabbLab: TLabel;
       LegalabbEd: TEdit;
-    KerekitLab: TLabel;
+      KerekitLab: TLabel;
       KerekitesCB: TComboBox;
       TabSheet3: TTabSheet;
-    LapOnChk: TCheckBox;
-    LapRajzCB: TComboBox;
+      LapOnChk: TCheckBox;
+      LapRajzCB: TComboBox;
       VastagBox: TGroupBox;
-    HaloVasLab: TLabel;
-    EgyenlitoVasLab: TLabel;
-    TeritoVasLab: TLabel;
-    SegedVasLab: TLabel;
-    PartVasLab: TLabel;
-    HatarVasLab: TLabel;
-    ToVasLab: TLabel;
-    Pont1Lab: TLabel;
-    HaloVasEd: TSpinEdit;
-    EgyenlitoVasEd: TSpinEdit;
-    KezdoVasEd: TSpinEdit;
-    TeritoVasEd: TSpinEdit;
-    SegedVasEd: TSpinEdit;
-    PartVasEd: TSpinEdit;
-    HatarVasEd: TSpinEdit;
-    Pont2Lab: TLabel;
-    Pont3Lab: TLabel;
-    Pont4Lab: TLabel;
-    Pont5Lab: TLabel;
-    Pont6Lab: TLabel;
-    Pont7Lab: TLabel;
-    KezdoVasLab: TLabel;
-    ToVasEd: TSpinEdit;
-    Pont8Lab: TLabel;
+      HaloVasLab: TLabel;
+      EgyenlitoVasLab: TLabel;
+      TeritoVasLab: TLabel;
+      SegedVasLab: TLabel;
+      PartVasLab: TLabel;
+      HatarVasLab: TLabel;
+      ToVasLab: TLabel;
+      Pont1Lab: TLabel;
+      HaloVasEd: TSpinEdit;
+      EgyenlitoVasEd: TSpinEdit;
+      KezdoVasEd: TSpinEdit;
+      TeritoVasEd: TSpinEdit;
+      SegedVasEd: TSpinEdit;
+      PartVasEd: TSpinEdit;
+      HatarVasEd: TSpinEdit;
+      Pont2Lab: TLabel;
+      Pont3Lab: TLabel;
+      Pont4Lab: TLabel;
+      Pont5Lab: TLabel;
+      Pont6Lab: TLabel;
+      Pont7Lab: TLabel;
+      KezdoVasLab: TLabel;
+      ToVasEd: TSpinEdit;
+      Pont8Lab: TLabel;
       GroupBox1: TGroupBox;
-      totxt: TEdit;
-      hatartxt: TEdit;
-      parttxt: TEdit;
+      TotxtEd: TEdit;
+      HatartxtEd: TEdit;
+      ParttxtEd: TEdit;
       Label1: TLabel;
       Label2: TLabel;
       Label3: TLabel;
@@ -63,6 +63,12 @@ interface
       TofileBtn: TButton;
       OpenDialog1: TOpenDialog;
       HosszuChk: TCheckBox;
+      FolyotxtEd: TEdit;
+      Label4: TLabel;
+      FolyofileBtn: TButton;
+      Label5: TLabel;
+      FolyoVasEd: TSpinEdit;
+      Pont9Lab: TLabel;
       procedure OKBtnClick(Sender: TObject);
       procedure MaigazitChkClick(Sender: TObject);
       procedure LegalabbEdKeyPress(Sender: TObject; var Key: Char);
@@ -90,6 +96,8 @@ interface
       procedure SzazalekEdChange(Sender: TObject);
       procedure LegalabbEdChange(Sender: TObject);
       procedure KerekitesCBChange(Sender: TObject);
+    procedure FolyofileBtnClick(Sender: TObject);
+    procedure FolyoVasEdChange(Sender: TObject);
     private
       { Private declarations }
     public
@@ -114,9 +122,10 @@ implementation
   procedure TOptionsForm.FormCreate(Sender: TObject);
   begin
     // koordinátafájlok
-    parttxt.Text  := IniFile.ReadString('Adatbazis', 'Partok', 'part.txt');
-    hatartxt.Text := IniFile.ReadString('Adatbazis', 'Hatarok', 'hatar.txt');
-    totxt.Text    := IniFile.ReadString('Adatbazis', 'Tavak', 'to.txt');
+    ParttxtEd.Text  := IniFile.ReadString('Adatbazis', 'Partok', 'part.txt');
+    HatartxtEd.Text := IniFile.ReadString('Adatbazis', 'Hatarok', 'hatar.txt');
+    TotxtEd.Text    := IniFile.ReadString('Adatbazis', 'Tavak', 'to.txt');
+    FolyotxtEd.Text := IniFile.ReadString('Adatbazis', 'Folyok', 'folyo.txt');
 
     // méretezés, igazítás
     AbraigazitChk.Checked   := IniFile.ReadBool   ('Meretezes', 'Abraigazitas'   , True);
@@ -141,6 +150,7 @@ implementation
     PartVasEd.Value      := IniFile.ReadInteger('Megjelenites', 'Partok'          ,1);
     HatarVasEd.Value     := IniFile.ReadInteger('Megjelenites', 'Hatarok'         ,1);
     ToVasEd.Value        := IniFile.ReadInteger('Megjelenites', 'Tavak'           ,1);
+    FolyoVasEd.Value     := IniFile.ReadInteger('Megjelenites', 'Folyok'          ,1);
   end;
 
   procedure TOptionsForm.OKBtnClick(Sender: TObject);
@@ -209,10 +219,10 @@ implementation
     OpenDialog1.InitialDir := ApplDir;
     if OpenDialog1.Execute then begin
       if ExtractFileDir(OpenDialog1.FileName) = ApplDir then
-        Parttxt.Text := ExtractFileName(OpenDialog1.FileName)
+        ParttxtEd.Text := ExtractFileName(OpenDialog1.FileName)
       else
-        Parttxt.Text := OpenDialog1.FileName;
-    end;    
+        ParttxtEd.Text := OpenDialog1.FileName;
+    end;
   end;
 
   procedure TOptionsForm.HatarfileBtnClick(Sender: TObject);
@@ -220,9 +230,10 @@ implementation
     NeedSaveIni := True;
     OpenDialog1.InitialDir := ApplDir;
     if OpenDialog1.Execute then
-     if ExtractFileDir(OpenDialog1.FileName) = ApplDir
-      then Hatartxt.Text:=ExtractFileName(OpenDialog1.FileName)
-      else Hatartxt.Text:=OpenDialog1.FileName;
+      if ExtractFileDir(OpenDialog1.FileName) = ApplDir then
+        HatartxtEd.Text := ExtractFileName(OpenDialog1.FileName)
+      else
+        HatartxtEd.Text := OpenDialog1.FileName;
   end;
 
   procedure TOptionsForm.TofileBtnClick(Sender: TObject);
@@ -231,9 +242,21 @@ implementation
     OpenDialog1.InitialDir := ApplDir;
     if OpenDialog1.Execute then begin
       if ExtractFileDir(OpenDialog1.FileName) = ApplDir then
-        Totxt.Text := ExtractFileName(OpenDialog1.FileName)
+        TotxtEd.Text := ExtractFileName(OpenDialog1.FileName)
       else
-        Totxt.Text:=OpenDialog1.FileName;
+        TotxtEd.Text := OpenDialog1.FileName;
+    end;
+  end;
+
+  procedure TOptionsForm.FolyofileBtnClick(Sender: TObject);
+  begin
+    NeedSaveIni := True;
+    OpenDialog1.InitialDir := ApplDir;
+    if OpenDialog1.Execute then begin
+      if ExtractFileDir(OpenDialog1.FileName) = ApplDir then
+        FolyotxtEd.Text := ExtractFileName(OpenDialog1.FileName)
+      else
+        FolyotxtEd.Text := OpenDialog1.FileName;
     end;
   end;
 
@@ -305,6 +328,11 @@ implementation
   end;
 
   procedure TOptionsForm.ToVasEdChange(Sender: TObject);
+  begin
+    NeedSaveIni := True;
+  end;
+
+  procedure TOptionsForm.FolyoVasEdChange(Sender: TObject);
   begin
     NeedSaveIni := True;
   end;

@@ -77,6 +77,8 @@ type
     KezdoMerPolusCB: TComboBox;
     KezdoMerPolusLab: TLabel;
     SorrendBtn: TButton;
+    FolyoChk: TCheckBox;
+    FolyoSzinCB: TComboBox;
     procedure VetuletCBChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure CsaladCBChange(Sender: TObject);
@@ -101,6 +103,10 @@ type
     procedure KozMerFokEdKeyPress(Sender: TObject; var Key: Char);
     procedure SorrendClick(Sender: TObject);
     procedure SorrendBtnClick(Sender: TObject);
+    procedure SzinCBDrawItem(Control: TWinControl; Index: Integer;
+      Rect: TRect; State: TOwnerDrawState);
+    procedure FolyoChkClick(Sender: TObject);
+    procedure FokSzinCBChange(Sender: TObject);
   private
     { Private declarations }
     WhereMouse: TPoint;
@@ -122,11 +128,22 @@ begin
   MerReszletCB.ItemIndex := 4;
   SegParReszletCB.ItemIndex := 4;
   SegMerReszletCB.ItemIndex := 4;
+
+  for I := 0 to High(ALLCOLORS) do begin
+    FokSzinCB.Items.Add(ALLCOLORS[I].Name);
+    SegSzinCB.Items.Add(ALLCOLORS[I].Name);
+    PartSzinCB.Items.Add(ALLCOLORS[I].Name);
+    HatarSzinCB.Items.Add(ALLCOLORS[I].Name);
+    ToSzinCB.Items.Add(ALLCOLORS[I].Name);
+    FolyoSzinCB.Items.Add(ALLCOLORS[I].Name);
+  end;
+
   FokSzinCB.Itemindex := 0;
   SegSzinCB.Itemindex := 0;
   PartSzinCB.Itemindex := 0;
   HatarSzinCB.Itemindex := 0;
   ToSzinCB.Itemindex := 0;
+  FolyoSzinCB.Itemindex := 0;
   CsaladCB.Itemindex := 0;
 
   Vet[0]:='Postel-féle';
@@ -267,7 +284,6 @@ begin
   Vetvalt := True;
   ManZoom := False;
   ManScale := False;
-  Lapba := False;
   Crop := False;
   origomas := False;
 
@@ -563,6 +579,17 @@ begin
   end;
 end;
 
+procedure TSettingsForm.FolyoChkClick(Sender: TObject);
+begin
+  if FolyoChk.State = cbChecked then begin
+    FolyoSzinCB.Enabled := True;
+    FolyoSzinCB.Color := clWindow;
+  end else begin
+    FolyoSzinCB.Enabled := False;
+    FolyoSzinCB.Color := clMenu;
+  end;
+end;
+
 procedure TSettingsForm.JellemBtnClick(Sender: TObject);
 begin
   if AktivVetulet in [89,102] then // Érdi-Krausz-féle, Winkel-féle
@@ -617,7 +644,7 @@ end;
 procedure TSettingsForm.OpenBtnClick(Sender: TObject);
 begin
   Width := 346;
-  Height := 404;
+  Height := 428;
 
   CimSorLab.Width := 339;
   ExitBtn.Left := 324;
@@ -639,7 +666,7 @@ end;
 
 procedure TSettingsForm.AlkalmazBtnClick(Sender: TObject);
 begin
-  MainForm.FrissitClick(AlkalmazBtn);
+  MainForm.FrissitBtnClick(AlkalmazBtn);
 end;
 
 procedure TSettingsForm.KozMerFokEdKeyPress(Sender: TObject; var Key: Char);
@@ -655,6 +682,52 @@ end;
 procedure TSettingsForm.SorrendBtnClick(Sender: TObject);
 begin
   LayersForm.Show;
+end;
+
+procedure TSettingsForm.SzinCBDrawItem(Control: TWinControl;
+  Index: Integer; Rect: TRect; State: TOwnerDrawState);
+var
+  ComboBox: TComboBox;
+  InnerRect : TRect;
+  BgColor : TColor;
+  FontColor : TColor;
+begin
+  ComboBox := (Control as TComboBox);
+
+  with ComboBox.Canvas do begin
+    // Elõször alapszínnel töltjük az egész területet
+    if ComboBox.Enabled then begin
+      BgColor := clWindow;
+      FontColor := clWindowText;
+    end else begin
+      BgColor := clMenu;
+      FontColor := clGrayText;
+    end;
+
+    Brush.Color := BgColor;
+    FillRect(Rect);
+
+    // Az adott elemhez tartozó színû négyzet kirajzolása
+    InnerRect := Bounds(Rect.Left + 1, Rect.Top + 2 , Rect.Left + ComboBox.ItemHeight - 5, Rect.Bottom - Rect.Top - 4);
+    Brush.Color := ALLCOLORS[Index].Color;
+    FillRect(InnerRect);
+
+    // Szín nevének kiírása
+    InnerRect := Bounds(Rect.Left + ComboBox.ItemHeight + 3, Rect.Top, Rect.Right - Rect.Left, Rect.Bottom - Rect.Top);
+    Brush.Color := BgColor;
+    Font.Color := FontColor;
+    DrawText(Handle, PChar(ComboBox.Items[Index]), Length(ComboBox.Items[Index]), InnerRect, DT_VCENTER + DT_SINGLELINE);
+  end;
+end;
+
+procedure TSettingsForm.FokSzinCBChange(Sender: TObject);
+begin
+(*  AssignFile(DebugFile, 'debug6.log');
+  Rewrite(DebugFile);
+  WriteLn(DebugFile, 'FokszinCB.ItemIndex: ', FokSzinCB.Itemindex);
+  WriteLn(DebugFile, 'Szin: ', ALLCOLORS[FokSzinCB.Itemindex].Color);
+  CloseFile(DebugFile);
+*)  
 end;
 
 end.
