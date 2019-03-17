@@ -127,14 +127,17 @@ interface
     j,l, Winni: Byte;
     SettingsForm: TSettingsForm;
     Ini, Txt: TextFile;
-    Lapx,Lapy: Array[0..6,0..6] of Double;
-    Lx,Ly: Double;
-    origomas: Boolean=False;
-    Sajt3: Boolean=False;
+    origomas: Boolean = False;
+    Sajt3: Boolean = False;
     MoveFrom, MoveTo, StartPoint, EndPoint: TPoint;
-    Crop: Boolean=False;
-    Elso: Boolean=True;
+    Crop: Boolean = False;
+    Elso: Boolean = True;
     CropScrollHorz, CropScrollVert: Integer;
+
+    // Lapméretek
+    //Lapx,Lapy: array[0..6,0..3] of Double;
+    PageSizes: array of array of TDoublePoint; // Fekvõ elhelyezésben a lapméretek mértékegységenként
+    Lx, Ly: Double; // Az aktuális lapméret ezredinchben
 
     // Vetületi paraméterek (parameters* formokon megadva)
     fin : Byte; // Hossztartó paralelkör pólustávolsága
@@ -147,12 +150,12 @@ interface
     fiah : Double;
     Felgomb : Boolean = True; // Az ábrázolt terület félgömb
 
-    Vetvalt : Boolean=True;
+    Vetvalt : Boolean = True;
     Egyenes : Boolean = False;
     AHeight, AWidth : Integer;
     Egyseg : Byte = 0; // Kiválasztott mértékegység
     ManZoom : Boolean; // Nagyítás mértéke manuálisan meghatározva
-    ManScale: Boolean=False; // Mératarány manuálisan meghatározva
+    ManScale: Boolean = False; // Mératarány manuálisan meghatározva
 
     function NagyitasVizsgalo(szam : String) : Boolean;
 
@@ -316,7 +319,7 @@ implementation
     Status : Integer;
     VRes : Integer; // képernyõ függõleges mérete pixelben (pl. 1080)
     VSize : Integer; // fizikai méret mm-ben (pl. 334)
-    I : Byte;
+    I, J : Byte;
   begin
     InitVariables;
 
@@ -339,27 +342,31 @@ implementation
     VRes := GetDeviceCaps(self.Canvas.Handle, VERTRES);
     VSize := GetDeviceCaps(self.Canvas.Handle, VERTSIZE);
 
-    AssignFile(DebugFile, 'debug3.log');
-    Rewrite(DebugFile);
-    WriteLn(DebugFile, 'VRes: ', VRes);
-    WriteLn(DebugFile, 'VSize: ', VSize);
-
     TRY
       PPI := Convert('mm', 'in', VSize);
       PPI := VRes / PPI;
     EXCEPT
       PPI := 96;
     END;
-    WriteLn(DebugFile, 'PPI: ', Format('%g', [PPI]));
+
+    for I := 0 to High(UNITS) do begin
+      EgysegCB.Items.Add(UNITS[I].Name);
+    end;
+    EgysegCB.ItemIndex := 0;
 
     EgysegCB.ItemIndex := IniFile.ReadInteger('Egyseg', 'Egyseg', 0);
     Egyseg := EgysegCB.ItemIndex;
 
+    (*AssignFile(DebugFile, 'debug3.log');
+    Rewrite(DebugFile);
+    WriteLn(DebugFile, 'VRes: ', VRes);
+    WriteLn(DebugFile, 'VSize: ', VSize);
+    WriteLn(DebugFile, 'PPI: ', Format('%g', [PPI]));
+    WriteLn(DebugFile, 'Egyseg: ', Egyseg);
+    CloseFile(DebugFile);*)
+
     if PPI < 90 then
       WindowState := wsMaximized;
-
-    WriteLn(DebugFile, 'PPI2: ', Format('%g', [PPI]));
-    CloseFile(DebugFile);
 
     Screen.Cursors[CR_ZOOMIN]   := LoadCursor(HInstance, 'ZOOMIN');
     Screen.Cursors[CR_ZOOMOUT]  := LoadCursor(HInstance, 'ZOOMOUT');
@@ -374,11 +381,6 @@ implementation
     Bitmap.PixelFormat := pf32bit;
     Bitmap.Width := Abra.Width;
     Bitmap.Height := Abra.Height;
-
-    for I := 0 to High(UNITS) do begin
-      EgysegCB.Items.Add(UNITS[I].Name);
-    end;
-    EgysegCB.ItemIndex := 0;
 
     Abra.Picture.Graphic := Bitmap;
     OrigoX := Trunc(Abra.Width / 2);
@@ -399,36 +401,16 @@ implementation
     SettingsForm.Top := Top + 35 + (ClientHeight - ScrollBox1.Height);
     SettingsForm.Left := Left + 13;
 
-    Lapx[0,0] := 1189;Lapy[0,0] := 841;
-    Lapx[1,0] := 841;Lapy[1,0] := 594;
-    Lapx[2,0] := 594;Lapy[2,0] := 420;
-    Lapx[3,0] := 420;Lapy[3,0] := 297;
-    Lapx[4,0] := 297;Lapy[4,0] := 210;
-    Lapx[5,0] := 210;Lapy[5,0] := 148.5;
+    SetLength(PageSizes, Length(DEFPAGESIZES) + 1, Length(DEFPAGESIZES[0]));
+    for I := 0 to High(DEFPAGESIZES) do begin
+      for J := 0 to High(DEFPAGESIZES[0]) do begin
+        PageSizes[I,J].X := DEFPAGESIZES[I,J].X;
+        PageSizes[I,J].Y := DEFPAGESIZES[I,J].Y;
+      end;
+    end;
 
-    Lapx[0,1] := 118.9;Lapy[0,1] := 84.1;
-    Lapx[1,1] := 84.1;Lapy[1,1] := 59.4;
-    Lapx[2,1] := 59.4;Lapy[2,1] := 42;
-    Lapx[3,1] := 42;Lapy[3,1] := 29.7;
-    Lapx[4,1] := 29.7;Lapy[4,1] := 21;
-    Lapx[5,1] := 21;Lapy[5,1] := 14.85;
-
-    Lapx[0,2] := 46.811;Lapy[0,2] := 33.110;
-    Lapx[1,2] := 33.110;Lapy[1,2] := 23.386;
-    Lapx[2,2] := 23.386;Lapy[2,2] := 16.535;
-    Lapx[3,2] := 16.535;Lapy[3,2] := 11.693;
-    Lapx[4,2] := 11.693;Lapy[4,2] := 8.268;
-    Lapx[5,2] := 8.268;Lapy[5,2] := 5.827;
-
-    Lapx[0,3] := 46811;Lapy[0,3] := 33110;
-    Lapx[1,3] := 33110;Lapy[1,3] := 23386;
-    Lapx[2,3] := 23386;Lapy[2,3] := 16535;
-    Lapx[3,3] := 16535;Lapy[3,3] := 11693;
-    Lapx[4,3] := 11693;Lapy[4,3] := 8268;
-    Lapx[5,3] := 8268;Lapy[5,3] := 5827;
-
-    Lx := Lapx[3,3];
-    Ly := Lapy[3,3];
+    Lx := PageSizes[3,3].X;
+    Ly := PageSizes[3,3].Y;
 
     SaveDialog1.InitialDir := ApplDir;
     Application.OnMessage := AppMessage;
@@ -507,10 +489,6 @@ implementation
           Abra.Canvas.Pen.Mode := pmCopy;
           SetCursor(Screen.Cursors[CR_PENCIL]);
 
-          AssignFile(DebugFile, 'debug8.log');
-          Rewrite(DebugFile);
-          WriteLn(DebugFile, 'Screen.Cursor: ', Screen.Cursor);
-
           if ssCtrl in Shift then begin
             StartPoint.X := KisXKorr(X);
             StartPoint.Y := KisYKorr(Y);
@@ -519,10 +497,6 @@ implementation
             Egyenes := True;
           end else if ssShift in Shift then
             SetCursor(Screen.Cursors[CR_ERASER]);
-
-          WriteLn(DebugFile, 'Screen.Cursor: ', Screen.Cursor);
-          WriteLn(DebugFile, 'Abra.Cursor: ', Screen.Cursor);
-          CloseFile(DebugFile);
 
           Abra.Canvas.Moveto(KisXKorr(X),KisYKorr(Y));
           Rajzol := True;
@@ -800,17 +774,8 @@ implementation
 
     procedure SetColor(SzinCB: TCombobox);
     var Color: TColor;
-        DebugFile2: TextFile;
     begin
       Color := ALLCOLORS[SzinCB.ItemIndex].Color;
-
-      AssignFile(DebugFile2, 'debug7.log');
-      Append(DebugFile2);
-      WriteLn(DebugFile2, 'SzinCB.Name: ', SzinCB.Name);
-      WriteLn(DebugFile2, 'SzinCB.ItemIndex: ', SzinCB.Itemindex);
-      WriteLn(DebugFile2, 'Szin: ', ALLCOLORS[SzinCB.Itemindex].Color);
-      WriteLn(DebugFile2, 'Color: ', Color);
-      CloseFile(DebugFile2);
 
       case Mode of
       PRINTMODE:
@@ -828,6 +793,14 @@ implementation
         Printer.Canvas.Pen.Width := Width
       else if Mode <> PLTMODE then
         Bitmap.Canvas.Pen.Width := Width;
+    end;
+
+    procedure SetPenStyle(PenStyle: TPenStyle);
+    begin
+      if Mode = PRINTMODE then
+        Printer.Canvas.Pen.Style := PenStyle
+      else if Mode <> PLTMODE then
+        Bitmap.Canvas.Pen.Style := PenStyle;
     end;
 
     procedure SetReszletFok(Index : Byte);
@@ -2403,7 +2376,7 @@ implementation
 
       if (Mode = DRAWMODE) then begin
 
-        AssignFile(DebugFile, 'debug4.log');
+        (*AssignFile(DebugFile, 'debug4.log');
         Rewrite(DebugFile);
         WriteLn(DebugFile, 'PPI: ', Format('%g', [PPI]));
         WriteLn(DebugFile, 'FennTop: ', FennTop);
@@ -2412,14 +2385,12 @@ implementation
         WriteLn(DebugFile, 'JobbTop: ', JobbTop);
         WriteLn(DebugFile, 'OMoveX: ', OMoveX);
         WriteLn(DebugFile, 'OMoveY: ', OMoveY);
+        WriteLn(DebugFile, 'Ly: ', Format('%g', [Ly]));
+        WriteLn(DebugFile, 'Lx: ', Format('%g', [Lx]));*)
 
         if OptionsForm.AbraigazitChk.Checked then begin
-          WriteLn(DebugFile, 'Ly: ', Format('%g', [Ly]));
-          WriteLn(DebugFile, 'Lx: ', Format('%g', [Lx]));
           Valos.Height := Trunc(Ly / 1000 * PPI);
           Valos.Width := Trunc(Lx / 1000 * PPI);
-          WriteLn(DebugFile, 'Valos.Height: ', Valos.Height);
-          WriteLn(DebugFile, 'Valos.Width: ', Valos.Width);
 
           if (FennTop - OMoveY > Ly / 2) or (LennTop - OMoveY < -Ly / 2) then
             if FennTop - OMoveY> -LennTop + OMoveY then
@@ -2445,11 +2416,12 @@ implementation
           lapmovex := OMoveX - KoMoveX;
           lapmovey := OMoveY - KoMoveY;
         end;
-        WriteLn(DebugFile, 'Valos.Height: ', Valos.Height);
-        WriteLn(DebugFile, 'Valos.Width: ', Valos.Width);
 
         Lc := ScrollBox1.Width / ScrollBox1.Height;
-        WriteLn(DebugFile, 'Lc: ', Format('%g', [Lc]));
+
+        //WriteLn(DebugFile, 'Valos.Height: ', Valos.Height);
+        //WriteLn(DebugFile, 'Valos.Width: ', Valos.Width);
+        //WriteLn(DebugFile, 'Lc: ', Format('%g', [Lc]));
 
         if Valos.Width < Valos.Height * Lc then
           Valos.Width := Trunc(Valos.Height * Lc);
@@ -2460,11 +2432,12 @@ implementation
         Valos.Height := Valos.Height + Trunc(70 * Valos.Height / 1100);
 
         if OptionsForm.AutozoomChk.Checked and not ManZoom then begin
-          WriteLn(DebugFile, 'ScrollBox1.Width: ', ScrollBox1.Width);
-          WriteLn(DebugFile, 'Valos.Width: ', Valos.Width);
-
           Zoom := Trunc(100 * (ScrollBox1.Width - 4) / Valos.Width);
-          WriteLn(DebugFile, 'Zoom: ', Zoom);
+
+          //WriteLn(DebugFile, 'ScrollBox1.Width: ', ScrollBox1.Width);
+          //WriteLn(DebugFile, 'Valos.Height: ', Valos.Height);
+          //WriteLn(DebugFile, 'Valos.Width: ', Valos.Width);
+          //WriteLn(DebugFile, 'Zoom: ', Zoom);
 
           AWidth := ScrollBox1.Width - 4;
           AHeight := ScrollBox1.Height - 4;
@@ -2472,7 +2445,7 @@ implementation
           AWidth := Trunc(Zoom / 100 * Valos.Width);
           AHeight := Trunc(Zoom / 100 * Valos.Height);
         end;
-        CloseFile(DebugFile);
+        //CloseFile(DebugFile);
 
         repeat
           TRY
@@ -2636,10 +2609,6 @@ implementation
 
         if LayersForm.RetegBox.Items[j] = GetLayerName('FOK') then begin
 
-          AssignFile(DebugFile, 'debug1.log');
-          Rewrite(DebugFile);
-          WriteLn(DebugFile, 'MerSurusegFok', MerSurusegFok);
-          WriteLn(DebugFile, 'ParSurusegFok', ParSurusegFok);
           SetColor(SettingsForm.FokSzinCB);
 
           if SettingsForm.FokChk.Checked then begin
@@ -2649,12 +2618,9 @@ implementation
             i := 0;
 
             repeat
-              WriteLn(DebugFile, 'Next step: ', i);
-
               q := 0;
               Fi := 89.995;
               La := (i - Trunc(180 / MerSurusegFok)) * MerSurusegFok + 0.01;
-              WriteLn(DebugFile, i, ' ', La);
 
               if Almost(La, 0) then
                 SetPenWidth(OptionsForm.KezdoVasEd.Value)
@@ -2675,9 +2641,6 @@ implementation
                   Lc := Arcus(La);
                 end;
 
-                WriteLn(DebugFile, 'Vizsgal1: ', Fi, ' , ', La);
-                WriteLn(DebugFile, 'Vizsgal2: ', Fc, ' , ', Lc);
-                WriteLn(DebugFile, 'Szin: ', Bitmap.Canvas.Pen.Color);
                 Vizsgal;
                 Lca := Lc;
                 Fca := Fc;
@@ -2693,13 +2656,13 @@ implementation
               end;
 
               i := i+1;
-              WriteLn(DebugFile,'end of iteration step no. ', i);
             until i > loopint;
 
             {térítõk,sarkkörök}
             SetReszletFok(SettingsForm.ParReszletCB.ItemIndex);
             if SettingsForm.TeritoChk.Checked then begin
-              Bitmap.Canvas.Pen.Style := psDash;
+              SetPenStyle(psDash);
+              //Bitmap.Canvas.Pen.Style := psDash;
               for i := 1 to 4 do begin
                 SetPenWidth(OptionsForm.TeritoVasEd.Value);
                 case i of
@@ -2710,9 +2673,9 @@ implementation
                 end;
                 paralelkor;
               end;
-              Bitmap.Canvas.Pen.Style := psSolid;
+              SetPenStyle(psSolid);
+              //Bitmap.Canvas.Pen.Style := psSolid;
             end;
-            CloseFile(DebugFile);
 
             {szélességi körök}
             for i := 0 to 180 div ParSurusegFok do begin
@@ -3171,7 +3134,7 @@ implementation
 
   procedure TMainForm.PapirMIClick(Sender: TObject);
   begin
-    PageForm.Showmodal;
+    PageForm.ShowModal;
   end;
 
   procedure TMainForm.EgysegCBChange(Sender: TObject);
@@ -3182,16 +3145,16 @@ implementation
     Egyseg := EgysegCB.ItemIndex;
     Minmargo := Convert(3, Egyseg, Minmargomi);
     OptionsForm.LegalabbEd.Text := Format('%-2.4g ', [Minmargo]) + UNITS[Egyseg].Code;
-    PageForm.PapirszelesEd.Text := Format('%-2.7g ', [Lapx[PapirMeret, Egyseg]]) + UNITS[Egyseg].Code;
-    PageForm.PapirmagasEd.Text := Format('%-2.7g ', [Lapy[PapirMeret, Egyseg]]) + UNITS[Egyseg].Code;
+    PageForm.PapirszelesEd.Text := Format('%-2.7g ', [PageSizes[PapirMeret, Egyseg].X]) + UNITS[Egyseg].Code;
+    PageForm.PapirmagasEd.Text := Format('%-2.7g ', [PageSizes[PapirMeret, Egyseg].Y]) + UNITS[Egyseg].Code;
     SzelesEd.Text := FloatToStr(Convert(3, EgysegCB.ItemIndex, JobbTop - BalTop));
     MagasEd.Text := FloatToStr(Convert(3, EgysegCB.ItemIndex, FennTop - LennTop));
     if PageForm.AlloBtn.Checked then begin
-      MainForm.Lapszeles.Text := Format('%-2.6g ', [Lapy[PapirMeret, Egyseg]]);
-      MainForm.Lapmagas.Text := Format('%-2.6g ', [Lapx[PapirMeret, Egyseg]]);
+      MainForm.Lapszeles.Text := Format('%-2.6g ', [PageSizes[PapirMeret, Egyseg].Y]);
+      MainForm.Lapmagas.Text := Format('%-2.6g ', [PageSizes[PapirMeret, Egyseg].X]);
     end else begin
-      MainForm.Lapszeles.Text := Format('%-2.6g ', [Lapx[PapirMeret, Egyseg]]);
-      MainForm.Lapmagas.Text := Format('%-2.6g ', [Lapy[PapirMeret, Egyseg]]);
+      MainForm.Lapszeles.Text := Format('%-2.6g ', [PageSizes[PapirMeret, Egyseg].X]);
+      MainForm.Lapmagas.Text := Format('%-2.6g ', [PageSizes[PapirMeret, Egyseg].Y]);
     end;
   end;
 
@@ -3464,11 +3427,6 @@ implementation
     MeresTorles(Abra.Canvas);
     StatusBar3.Visible := False;
     Abra.Cursor := CR_MOVEFROM;
-
-    AssignFile(DebugFile, 'debug.log');
-    Rewrite(DebugFile);
-    WriteLn(DebugFile, 'Abra.Cursor', Abra.Cursor);
-    CloseFile(DebugFile);
   end;
 
   procedure TMainForm.KozepreBtnClick(Sender: TObject);

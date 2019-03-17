@@ -28,10 +28,22 @@ interface
        Name : String;
        end;
 
+  type TPageSize = record
+       Code : ShortString;
+       UnitCode : ShortString;
+       Width : Double;
+       Height : Double;
+       end;
+
+  type TDoublePoint = record
+       X : Double;
+       Y : Double;
+       end;
+
   const
     EARTHRADIUS = 250929500; // a földsugár inchben
 
-  const // egérkurzor azonosítók
+  const // Egérkurzor azonosítók
     CR_ZOOMIN   = 1; // nagyítóban + jel
     CR_ZOOMOUT  = 2; // nagyítóban - jel
     CR_CROP     = 3; // + alakú kurzor
@@ -41,7 +53,7 @@ interface
     CR_MOVETO   = 7; // X alakú kurzor egy körben - mozgatás végpontja
     CR_MEASURE  = 8; // X alakú kurzor - távolságmérésnél kezdõ és végpont kijelölése
 
-  const // paraméterek alapértelmezett értékei
+  const // Vetületi paraméterek alapértelmezett értékei
     DEF_FI1  = 30;  // Valós kúpvetületek
     DEF_FI2  = 60;  // Valós kúpvetületek
     DEF_FIN  = 45;  // Kúpok ill. Bonne
@@ -63,6 +75,16 @@ interface
     (Code: 'cm'; Name: 'centiméter'),
     (Code: 'in'; Name: 'inch'),
     (Code: 'mi'; Name: 'ezredinch') );
+
+  // Alapértelmezett lapméretek
+  const DEFPAGESIZES : array[0..5,0..3] of TDoublePoint = (
+    ((X: 1189; Y: 841  ), (X: 118.9; Y: 84.1 ), (X: 46.811; Y: 33.110), (X: 46811; Y: 33110)), // A0
+    ((X: 841;  Y: 594  ), (X: 84.1;  Y: 59.4 ), (X: 33.110; Y: 23.386), (X: 33110; Y: 23386)), // A1
+    ((X: 594;  Y: 420  ), (X: 59.4;  Y: 42.0 ), (X: 23.386; Y: 16.535), (X: 23386; Y: 16535)), // A2
+    ((X: 420;  Y: 297  ), (X: 42.0;  Y: 29.7 ), (X: 16.535; Y: 11.693), (X: 16535; Y: 11693)), // A3
+    ((X: 297;  Y: 210  ), (X: 29.7;  Y: 21.0 ), (X: 11.693; Y: 8.268 ), (X: 11693; Y: 8268 )), // A4
+    ((X: 210;  Y: 148.5), (X: 21.0;  Y: 14.85), (X: 8.268;  Y: 5.827 ), (X: 8268;  Y: 5827 ))  // A5
+   );
 
   // Választható színek
   // A lap megjelenítés clLtGray színnel történik, ezért nem kínáljuk fel
@@ -92,7 +114,7 @@ interface
 
   var
     NeedComma : Boolean; // Tizedestörtekben a pontok vesszõvé alakítandók
-    DecSep : String; // Tizedespont vagy -vesszõ
+    DecSep : Char; // Tizedespont vagy -vesszõ
     IniFile : TIniFile; // Az alkalmazás ini fájlja
     NeedSaveIni : Boolean = False; // Beállítások módosultak, ini fájlba mentés szükséges lehet
     DebugFile : TextFile; // File debugoláshoz

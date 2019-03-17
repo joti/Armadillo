@@ -42,8 +42,8 @@ begin
   Application.CreateForm(TParametersForm4, ParametersForm4);
 
   with PageForm do begin
-    PapirszelesEd.Text := Format('%-4g', [Lapx[PapirCB.Itemindex, Egyseg]]) + UNITS[Egyseg].Code;
-    PapirmagasEd.Text := Format('%-4g', [Lapy[PapirCB.Itemindex, Egyseg]]) + UNITS[Egyseg].Code;
+    PapirszelesEd.Text := Format('%-2.4g ', [PageSizes[PapirCB.Itemindex, Egyseg].X]) + UNITS[Egyseg].Code;
+    PapirmagasEd.Text := Format('%-2.4g ', [PageSizes[PapirCB.Itemindex, Egyseg].Y]) + UNITS[Egyseg].Code;
   end;
 
   Nyito.Close;

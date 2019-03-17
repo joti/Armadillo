@@ -106,7 +106,6 @@ type
     procedure SzinCBDrawItem(Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState);
     procedure FolyoChkClick(Sender: TObject);
-    procedure FokSzinCBChange(Sender: TObject);
   private
     { Private declarations }
     WhereMouse: TPoint;
@@ -718,16 +717,6 @@ begin
     Font.Color := FontColor;
     DrawText(Handle, PChar(ComboBox.Items[Index]), Length(ComboBox.Items[Index]), InnerRect, DT_VCENTER + DT_SINGLELINE);
   end;
-end;
-
-procedure TSettingsForm.FokSzinCBChange(Sender: TObject);
-begin
-(*  AssignFile(DebugFile, 'debug6.log');
-  Rewrite(DebugFile);
-  WriteLn(DebugFile, 'FokszinCB.ItemIndex: ', FokSzinCB.Itemindex);
-  WriteLn(DebugFile, 'Szin: ', ALLCOLORS[FokSzinCB.Itemindex].Color);
-  CloseFile(DebugFile);
-*)  
 end;
 
 end.
